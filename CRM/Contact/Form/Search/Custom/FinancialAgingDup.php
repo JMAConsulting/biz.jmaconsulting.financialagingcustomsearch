@@ -131,7 +131,7 @@ class CRM_Contact_Form_Search_Custom_FinancialAgingDup extends CRM_Contact_Form_
     $select = $this->select('Pledge payment', $onlyIDs);
     $from = $this->pledgePaymentFromClause();
     $where = $this->where($includeContactIDs);
-    $groupBy = 'GROUP BY li.id';
+    $groupBy = ' GROUP BY li.id';
     $PPsql = $select . $from . $where . $groupBy;;
 
     $select = $this->select('Recurring payment', $onlyIDs);
@@ -146,7 +146,7 @@ class CRM_Contact_Form_Search_Custom_FinancialAgingDup extends CRM_Contact_Form_
     $groupBy = '';
     $select = 'SELECT ';
     if (count($this->_groupByColumns)) {
-      $groupBy = "GROUP BY " . implode(', ', $this->_groupByColumns);
+      $groupBy = " GROUP BY " . implode(', ', $this->_groupByColumns);
       $select .= implode(', ', $this->groupByColumns());
     }
     else {
@@ -190,12 +190,13 @@ class CRM_Contact_Form_Search_Custom_FinancialAgingDup extends CRM_Contact_Form_
     ];
 
     if (!$forSummary) {
-      $selectColumns += [
-        'temp.*',
+      $selectColumns = array_merge($selectColumns, [
+        'sort_name as sort_name',
+        'date_parm as date_parm',
         'GROUP_CONCAT(DISTINCT ft_name) as ft_name',
         'GROUP_CONCAT(DISTINCT ft_category) as ft_category',
         'GROUP_CONCAT(DISTINCT entity_type) as entity_type',
-      ];
+      ]);
     }
 
     return $selectColumns;
@@ -210,6 +211,9 @@ class CRM_Contact_Form_Search_Custom_FinancialAgingDup extends CRM_Contact_Form_
   }
 
   function alterRow(&$row) {
+    if (empty($row['days_overdue'])) {
+      $row['days_overdue'] = 0;
+    }
   }
 
   function summary() {
