@@ -191,6 +191,7 @@ class CRM_Contact_Form_Search_Custom_FinancialAgingDup extends CRM_Contact_Form_
 
     if (!$forSummary) {
       $selectColumns = array_merge($selectColumns, [
+        'contact_id as contact_id',
         'sort_name as sort_name',
         'date_parm as date_parm',
         'GROUP_CONCAT(DISTINCT ft_name) as ft_name',
