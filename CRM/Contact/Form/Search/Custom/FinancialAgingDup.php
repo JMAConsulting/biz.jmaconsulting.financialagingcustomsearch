@@ -30,7 +30,15 @@ class CRM_Contact_Form_Search_Custom_FinancialAgingDup extends CRM_Contact_Form_
     $form->add('select', 'group_of_contact', ts('Contact is in the group'), CRM_Core_PseudoConstant::group(), FALSE,
         array('id' => 'group_of_contact', 'multiple' => 'multiple', 'title' => ts('-- select --'))
     );
-
+    $form->add('select', 'member_of_contact_id', ts('Contact has Membership In'), self::getMembershipOrgs(), FALSE,
+        array('class' => 'crm-select2', 'multiple' => 'multiple', 'placeholder' => ts('-- select --'))
+    );
+    $form->addEntityRef('membership_type_id', ts('Membership Type'), array(
+      'entity' => 'MembershipType',
+      'multiple' => TRUE,
+      'placeholder' => ts('- any -'),
+      'select' => array('minimumInputLength' => 0),
+    ));
     $form->addDate('end_date', ts('Due By'), false, array('formatType' => 'custom'));
 
     $form->addSelect('financial_type_id', ['entity' => 'contribution', 'multiple' => 'multiple']);
@@ -43,7 +51,7 @@ class CRM_Contact_Form_Search_Custom_FinancialAgingDup extends CRM_Contact_Form_
       'option_url' => NULL,
     ]);
 
-    $form->assign('elements', array('group_of_contact', 'end_date', 'num_days_overdue', 'financial_type_id', 'preferred_communication_method'));
+    $form->assign('elements', array('group_of_contact', 'member_of_contact_id', 'membership_type_id', 'end_date', 'num_days_overdue', 'financial_type_id', 'preferred_communication_method'));
 
     $groupByElements = [
       ts('Contact ID') => 'contact_id',
@@ -107,6 +115,8 @@ class CRM_Contact_Form_Search_Custom_FinancialAgingDup extends CRM_Contact_Form_
     FROM temp_financialaging_customsearch temp
       LEFT JOIN civicrm_group_contact gc ON gc.contact_id = temp.contact_id AND gc.status = 'Added'
       LEFT JOiN civicrm_group_contact gcc ON gcc.contact_id = temp.contact_id
+      LEFT JOIN civicrm_membership m ON m.contact_id = temp.contact_id
+      LEFT JOIN civicrm_membership_type mt ON mt.id = m.membership_type_id
     ";
   }
 
@@ -157,10 +167,21 @@ class CRM_Contact_Form_Search_Custom_FinancialAgingDup extends CRM_Contact_Form_
       $select .= " *";
     }
 
-    $where = '';
-    if (!empty($this->_formValues['group_of_contact'])) {
-      $values = implode(', ', $this->_formValues['group_of_contact']);
-      $where = "WHERE " . sprintf("(gc.group_id IN (%s) OR gcc.group_id IN (%s))", $values, $values);
+    $where = 'WHERE (1)';
+    foreach ([
+      'group_of_contact' => '(gc.group_id IN (%s) OR gcc.group_id IN (%s))',
+      'member_of_contact_id' => 'member_of_contact_id IN (%s)',
+      'membership_type_id' => 'mt.id IN (%s)',
+    ] as $filter => $searchString) {
+      if (!empty($this->_formValues[$filter])) {
+        $values = implode(', ', (array) $this->_formValues[$filter]);
+        if ($filter == 'group_of_contact') {
+          $where .= " AND " . sprintf($searchString, $values, $values);
+        }
+        else {
+          $where .= " AND " . sprintf($searchString, $values);
+        }
+      }
     }
 
     $sql = $select . $this->from() . $where . $groupBy;
@@ -426,5 +447,22 @@ class CRM_Contact_Form_Search_Custom_FinancialAgingDup extends CRM_Contact_Form_
       'entity_type' => "'single contribution'",
     ];
   }
+
+  public static function getMembershipOrgs() {
+		$org_ids = array();
+		$sql = "SELECT distinct c.id, c.display_name
+     FROM civicrm_membership_type mt
+		   LEFT JOIN civicrm_contact c on mt.member_of_contact_id = c.id
+		 WHERE is_active = 1
+     ORDER BY c.display_name, mt.name
+    ";
+
+    $dao = CRM_Core_DAO::executeQuery($sql);
+    while($dao->fetch()) {
+      $org_ids[$dao->id] = $dao->display_name;
+    }
+
+		return $org_ids;
+	}
 
 }
