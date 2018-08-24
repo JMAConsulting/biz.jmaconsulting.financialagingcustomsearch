@@ -72,7 +72,7 @@
     {include file="CRM/Contact/Form/Search/Custom/EmptyResults.tpl"}
 {/if}
 
-{if $summary}
+{if $summary && $rows}
 <table border=1>
   {foreach from=$summary key=key_name item=cur_sum}
     {if $key_name eq 0}
