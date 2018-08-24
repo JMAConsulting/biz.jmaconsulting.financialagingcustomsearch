@@ -323,7 +323,7 @@ class CRM_Contact_Form_Search_Custom_FinancialAgingDup extends CRM_Contact_Form_
       'sort_name' => 'c.sort_name',
       'paid' => 'li.line_total',
       'total_amount' => 'cc.total_amount',
-      'currency' => 'li.currency',
+      'currency' => 'cc.currency',
       'line_id' => 'li.id',
       'ft_name' => 'ft.name',
       'ft_category' => "SUBSTRING(ft.name , 1, LOCATE( '---', ft.name) - 1)",
