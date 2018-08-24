@@ -116,7 +116,6 @@ class CRM_Contact_Form_Search_Custom_FinancialAgingDup extends CRM_Contact_Form_
       LEFT JOIN civicrm_group_contact gc ON gc.contact_id = temp.contact_id AND gc.status = 'Added'
       LEFT JOiN civicrm_group_contact gcc ON gcc.contact_id = temp.contact_id
       LEFT JOIN civicrm_membership m ON m.contact_id = temp.contact_id
-      LEFT JOIN civicrm_membership_type mt ON mt.id = m.membership_type_id
     ";
   }
 
@@ -170,7 +169,7 @@ class CRM_Contact_Form_Search_Custom_FinancialAgingDup extends CRM_Contact_Form_
     $where = 'WHERE (1)';
     foreach ([
       'group_of_contact' => '(gc.group_id IN (%s) OR gcc.group_id IN (%s))',
-      'member_of_contact_id' => 'member_of_contact_id IN (%s)',
+      'member_of_contact_id' => 'm.membership_type_id IN (SELECT DISTINCT id FROM civicrm_membership_type WHERE member_of_contact_id IN (%s))',
       'membership_type_id' => 'mt.id IN (%s)',
     ] as $filter => $searchString) {
       if (!empty($this->_formValues[$filter])) {
