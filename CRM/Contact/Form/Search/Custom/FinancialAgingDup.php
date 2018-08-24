@@ -321,7 +321,7 @@ class CRM_Contact_Form_Search_Custom_FinancialAgingDup extends CRM_Contact_Form_
       'date_parm' => "'$end_date_parm'",
       'exp_date' => 'DATE(cc.receive_date)',
       'sort_name' => 'c.sort_name',
-      'paid' => 'li.amount',
+      'paid' => 'li.line_total',
       'total_amount' => 'cc.total_amount',
       'currency' => 'li.currency',
       'line_id' => 'li.id',
