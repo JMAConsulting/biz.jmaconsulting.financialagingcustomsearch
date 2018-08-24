@@ -170,7 +170,7 @@ class CRM_Contact_Form_Search_Custom_FinancialAgingDup extends CRM_Contact_Form_
     foreach ([
       'group_of_contact' => '(gc.group_id IN (%s) OR gcc.group_id IN (%s))',
       'member_of_contact_id' => 'm.membership_type_id IN (SELECT DISTINCT id FROM civicrm_membership_type WHERE member_of_contact_id IN (%s))',
-      'membership_type_id' => 'm.id IN (%s)',
+      'membership_type_id' => 'm.membership_type_id IN (%s)',
     ] as $filter => $searchString) {
       if (!empty($this->_formValues[$filter])) {
         $values = implode(', ', (array) $this->_formValues[$filter]);
