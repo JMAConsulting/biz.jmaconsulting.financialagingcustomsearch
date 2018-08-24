@@ -103,7 +103,11 @@ class CRM_Contact_Form_Search_Custom_FinancialAgingDup extends CRM_Contact_Form_
   }
 
   public function from() {
-    return " FROM temp_financialaging_customsearch temp";
+    return "
+    FROM temp_financialaging_customsearch temp
+      LEFT JOIN civicrm_group_contact gc ON gc.contact_id = temp.contact_id AND gc.status = 'Added'
+      LEFT JOiN civicrm_group_contact gcc ON gcc.contact_id = temp.contact_id
+    ";
   }
 
   function where($includeContactIDs = FALSE) {
@@ -152,7 +156,14 @@ class CRM_Contact_Form_Search_Custom_FinancialAgingDup extends CRM_Contact_Form_
     else {
       $select .= " *";
     }
-    $sql = $select . $this->from() . $groupBy;
+
+    $where = '';
+    if (!empty($this->_formValues['group_of_contact'])) {
+      $values = implode(', ', $this->_formValues['group_of_contact']);
+      $where = "WHERE " . sprintf("(gc.group_id IN (%s) OR gcc.group_id IN (%s))", $values, $values);
+    }
+
+    $sql = $select . $this->from() . $where . $groupBy;
 
     // -- this last line required to play nice with smart groups
     // INNER JOIN civicrm_contact contact_a ON contact_a.id = r.contact_id_a
