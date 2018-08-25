@@ -8,6 +8,8 @@ class CRM_Contact_Form_Search_Custom_FinancialAgingDup extends CRM_Contact_Form_
 
   protected $_groupByColumns = [];
 
+  protected $_whereClause = '';
+
   function __construct(&$formValues) {
     parent::__construct($formValues);
     $this->_groupByColumns = array_keys(CRM_Utils_Array::value('group_bys', $formValues, []));
@@ -16,8 +18,9 @@ class CRM_Contact_Form_Search_Custom_FinancialAgingDup extends CRM_Contact_Form_
 
   function __destruct() {
     CRM_Core_DAO::executeQuery('DROP TEMPORARY TABLE IF EXISTS temp_financialaging_customsearch');
+    CRM_Core_DAO::executeQuery('DROP TEMPORARY TABLE IF EXISTS temp_financialaging_groupcontacts');
+    CRM_Core_DAO::executeQuery('DROP TEMPORARY TABLE IF EXISTS temp_financialaging_membershipcontacts');
   }
-
 
   function buildForm(&$form) {
     $this->setTitle('Financial Aging with Pay Balances Details');
@@ -111,12 +114,7 @@ class CRM_Contact_Form_Search_Custom_FinancialAgingDup extends CRM_Contact_Form_
   }
 
   public function from() {
-    return "
-    FROM temp_financialaging_customsearch temp
-      LEFT JOIN civicrm_group_contact gc ON gc.contact_id = temp.contact_id AND gc.status = 'Added'
-      LEFT JOiN civicrm_group_contact gcc ON gcc.contact_id = temp.contact_id
-      LEFT JOIN civicrm_membership m ON m.contact_id = temp.contact_id
-    ";
+    return " FROM temp_financialaging_customsearch temp ";
   }
 
   function where($includeContactIDs = FALSE) {
@@ -140,11 +138,14 @@ class CRM_Contact_Form_Search_Custom_FinancialAgingDup extends CRM_Contact_Form_
 
   function all($offset = 0, $rowcount = 0, $sort = null, $includeContactIDs = false, $onlyIDs = false) {
     CRM_Core_DAO::executeQuery('DROP TEMPORARY TABLE IF EXISTS temp_financialaging_customsearch');
+    CRM_Core_DAO::executeQuery('DROP TEMPORARY TABLE IF EXISTS temp_financialaging_groupcontacts');
+    CRM_Core_DAO::executeQuery('DROP TEMPORARY TABLE IF EXISTS temp_financialaging_membershipcontacts');
+
+    $where = $this->where($includeContactIDs);
+    $groupBy = ' GROUP BY li.id';
 
     $select = $this->select('Pledge payment', $onlyIDs);
     $from = $this->pledgePaymentFromClause();
-    $where = $this->where($includeContactIDs);
-    $groupBy = ' GROUP BY li.id';
     $PPsql = $select . $from . $where . $groupBy;;
 
     $select = $this->select('Recurring payment', $onlyIDs);
@@ -167,21 +168,40 @@ class CRM_Contact_Form_Search_Custom_FinancialAgingDup extends CRM_Contact_Form_
     }
 
     $where = 'WHERE (1)';
-    foreach ([
-      'group_of_contact' => '(gc.group_id IN (%s) OR gcc.group_id IN (%s))',
-      'member_of_contact_id' => 'm.membership_type_id IN (SELECT DISTINCT id FROM civicrm_membership_type WHERE member_of_contact_id IN (%s))',
-      'membership_type_id' => 'm.membership_type_id IN (%s)',
-    ] as $filter => $searchString) {
-      if (!empty($this->_formValues[$filter])) {
-        $values = implode(', ', (array) $this->_formValues[$filter]);
-        if ($filter == 'group_of_contact') {
-          $where .= " AND " . sprintf($searchString, $values, $values);
-        }
-        else {
-          $where .= " AND " . sprintf($searchString, $values);
+    if (!empty($this->_formValues['group_of_contact'])) {
+      $values = implode(', ', (array) $this->_formValues[$filter]);
+        CRM_Core_DAO::executeQuery(sprintf("CREATE TEMPORARY TABLE temp_financialaging_groupcontacts DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci
+          (SELECT DISTINCT contact_id
+          FROM civicrm_group_contact
+          WHERE group_id IN (%s)) AND status = 'Added'
+            UNION ALL
+          (SELECT DISTINCT contact_id
+          FROM civicrm_group_contact_cache
+          WHERE group_id IN (%s)) ", $values, $values));
+
+        $where .= " AND contact_id IN (SELECT contact_id FROM temp_financialaging_groupcontacts) ";
+    }
+
+    if (!empty($this->_formValues['member_of_contact_id']) || !empty($this->_formValues['membership_type_id'])) {
+      $whereClause = '(1) ';
+      foreach ([
+        'member_of_contact_id' => ' AND membership_type_id IN ( SELECT id FROM civicrm_membership_type WHERE member_of_contact_id IN (%s) )',
+        'membership_type_id' => ' AND membership_type_id IN ( %s ) ',
+      ] as $filter => $searchString) {
+        if (!empty($this->_formValues[$filter])) {
+          $values = implode(', ', (array) $this->_formValues[$filter]);
+          $whereClause .= sprintf($searchString, $values);
         }
       }
+      CRM_Core_DAO::executeQuery(sprintf("CREATE TEMPORARY TABLE temp_financialaging_membershipcontacts DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci
+        (SELECT DISTINCT contact_id
+        FROM civicrm_membership
+        WHERE %s
+      ) ", $whereClause));
+      $where .= " AND contact_id IN (SELECT contact_id FROM temp_financialaging_membershipcontacts) ";
     }
+
+    $this->_whereClause = $where;
 
     $sql = $select . $this->from() . $where . $groupBy;
 
@@ -250,7 +270,7 @@ class CRM_Contact_Form_Search_Custom_FinancialAgingDup extends CRM_Contact_Form_
 
   function summary() {
     $select = "SELECT " . implode(', ', $this->groupByColumns(TRUE));
-    $sql = $select . $this->from() . " GROUP BY currency ";
+    $sql = $select . $this->from() . $this->_whereClause . " GROUP BY currency ";
 
     $headers = [
       [
