@@ -169,15 +169,16 @@ class CRM_Contact_Form_Search_Custom_FinancialAgingDup extends CRM_Contact_Form_
 
     $where = 'WHERE (1)';
     if (!empty($this->_formValues['group_of_contact'])) {
-      $values = implode(', ', (array) $this->_formValues[$filter]);
-        CRM_Core_DAO::executeQuery(sprintf("CREATE TEMPORARY TABLE temp_financialaging_groupcontacts DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci
-          (SELECT DISTINCT contact_id
+      $values = implode(', ', (array) $this->_formValues['group_of_contact']);
+      CRM_Core_DAO::executeQuery(sprintf("CREATE TEMPORARY TABLE temp_financialaging_groupcontacts DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci
+        (SELECT DISTINCT contact_id
           FROM civicrm_group_contact
-          WHERE group_id IN (%s)) AND status = 'Added'
+          WHERE group_id IN (%s) AND status = 'Added')
             UNION ALL
-          (SELECT DISTINCT contact_id
+        (SELECT DISTINCT contact_id
           FROM civicrm_group_contact_cache
-          WHERE group_id IN (%s)) ", $values, $values));
+          WHERE group_id IN (%s)
+        ) ", $values, $values));
 
         $where .= " AND contact_id IN (SELECT contact_id FROM temp_financialaging_groupcontacts) ";
     }
