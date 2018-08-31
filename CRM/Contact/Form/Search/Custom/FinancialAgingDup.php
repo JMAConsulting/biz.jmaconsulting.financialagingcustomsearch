@@ -121,13 +121,17 @@ class CRM_Contact_Form_Search_Custom_FinancialAgingDup extends CRM_Contact_Form_
     $whereClauses = ['(1)'];
     foreach ([
       'end_date' => 'DATE(cc.receive_date) < \'%s\'',
-      'num_days_overdue' => 'days_overdue = %s',
       'financial_type_id' => 'ft.id IN (%s)',
       'preferred_communication_method' => 'c.preferred_communication_method IN (%s)',
     ] as $filter => $dbColumn) {
       $value = CRM_Utils_Array::value($filter, $this->_formValues);
       if ($value) {
-        $whereClauses[] = sprintf($dbColumn, implode(',', $value));
+        if ($filter == 'end_date') {
+          $whereClauses[] = sprintf($dbColumn, date('Y-m-d', strtotime($value)));
+        }
+        else {
+          $whereClauses[] = sprintf($dbColumn, implode(',', $value));
+        }
       }
       elseif ($filter == 'end_date') {
         $whereClauses[] = sprintf($dbColumn, date('Y-m-d'));
@@ -168,6 +172,9 @@ class CRM_Contact_Form_Search_Custom_FinancialAgingDup extends CRM_Contact_Form_
     }
 
     $where = 'WHERE (1)';
+    if (!empty($this->_formValues['num_days_overdue'])) {
+      $where .= ' AND days_overdue >= ' . $this->_formValues['num_days_overdue'];
+    }
     if (!empty($this->_formValues['group_of_contact'])) {
       $values = implode(', ', (array) $this->_formValues['group_of_contact']);
       CRM_Core_DAO::executeQuery(sprintf("CREATE TEMPORARY TABLE temp_financialaging_groupcontacts DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci
@@ -184,7 +191,7 @@ class CRM_Contact_Form_Search_Custom_FinancialAgingDup extends CRM_Contact_Form_
     }
 
     if (!empty($this->_formValues['member_of_contact_id']) || !empty($this->_formValues['membership_type_id'])) {
-      $whereClause = '(1) ';
+      $whereClause = ' status_id != ' . array_search('Expired', CRM_Member_PseudoConstant::membershipStatus());
       foreach ([
         'member_of_contact_id' => ' AND membership_type_id IN ( SELECT id FROM civicrm_membership_type WHERE member_of_contact_id IN (%s) )',
         'membership_type_id' => ' AND membership_type_id IN ( %s ) ',
@@ -196,7 +203,8 @@ class CRM_Contact_Form_Search_Custom_FinancialAgingDup extends CRM_Contact_Form_
       }
       CRM_Core_DAO::executeQuery(sprintf("CREATE TEMPORARY TABLE temp_financialaging_membershipcontacts DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci
         (SELECT DISTINCT contact_id
-        FROM civicrm_membership
+        FROM civicrm_membership m
+        INNER JOIN civicrm_contact cc ON cc.id = m.contact_id AND cc.is_deleted = 0
         WHERE %s
       ) ", $whereClause));
       $where .= " AND contact_id IN (SELECT contact_id FROM temp_financialaging_membershipcontacts) ";
