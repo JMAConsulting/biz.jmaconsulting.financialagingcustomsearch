@@ -155,6 +155,7 @@ class CRM_Contact_Form_Search_Custom_FinancialAgingDup extends CRM_Contact_Form_
     $select = $this->select('Recurring payment', $onlyIDs);
     $from = $this->recurringPaymentFromClause();
     $RRsql = $select . $from . $where . $groupBy;
+    $groupBy = 'GROUP BY rr1.id';
 
     CRM_Core_DAO::executeQuery("CREATE TEMPORARY TABLE temp_financialaging_customsearch DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci
       ($PPsql)
@@ -381,40 +382,40 @@ class CRM_Contact_Form_Search_Custom_FinancialAgingDup extends CRM_Contact_Form_
       'date_parm' => "'$end_date_parm'",
       'exp_date' => 'DATE(cc.receive_date)',
       'sort_name' => 'c.sort_name',
-      'paid' => 'li.line_total',
+      'paid' => 'SUM(li.line_total)',
       'total_amount' => 'cc.total_amount',
       'currency' => 'cc.currency',
       'line_id' => 'li.id',
       'ft_name' => 'ft.name',
       'ft_category' => "SUBSTRING(ft.name , 1, LOCATE( '---', ft.name) - 1)",
-      'days_30' => "(SELECT SUM(rr2.amount)
-          FROM civicrm_contribution_recur rr2
-          WHERE rr2.id = rr1.id AND
+      'days_30' => "(SELECT SUM(rr2.total_amount)
+          FROM civicrm_contribution rr2
+          WHERE rr2.contribution_recur_id = rr1.id AND
            rr2.contribution_status_id IN ($pendingStatuses) AND
-           DATE(rr2.start_date) BETWEEN DATE(cc.receive_date) AND DATE_ADD(DATE(cc.receive_date), INTERVAL 30 DAY)
+           DATE(rr2.receive_date) BETWEEN DATE(cc.receive_date) AND DATE_ADD(DATE(cc.receive_date), INTERVAL 30 DAY)
       )",
-      'days_60' => "(SELECT SUM(rr3.amount)
-            FROM civicrm_contribution_recur rr3
-            WHERE rr3.id = rr1.id AND
+      'days_60' => "(SELECT SUM(rr3.total_amount)
+            FROM civicrm_contribution rr3
+            WHERE rr3.contribution_recur_id = rr1.id AND
              rr3.contribution_status_id IN ($pendingStatuses) AND
-              DATE(rr3.start_date) BETWEEN DATE_ADD(DATE(cc.receive_date), INTERVAL 31 DAY) AND DATE_ADD(DATE(cc.receive_date), INTERVAL 60 DAY)
+              DATE(rr3.receive_date) BETWEEN DATE_ADD(DATE(cc.receive_date), INTERVAL 31 DAY) AND DATE_ADD(DATE(cc.receive_date), INTERVAL 60 DAY)
       )",
-      'days_90' => "(SELECT SUM(rr4.amount)
-            FROM civicrm_contribution_recur rr4
-            WHERE rr4.id = rr1.id AND
+      'days_90' => "(SELECT SUM(rr4.total_amount)
+            FROM civicrm_contribution rr4
+            WHERE rr4.contribution_recur_id = rr1.id AND
              rr4.contribution_status_id IN ($pendingStatuses) AND
-              DATE(rr4.start_date) BETWEEN DATE_ADD(DATE(cc.receive_date), INTERVAL 61 DAY) AND DATE_ADD(DATE(cc.receive_date), INTERVAL 90 DAY)
+              DATE(rr4.receive_date) BETWEEN DATE_ADD(DATE(cc.receive_date), INTERVAL 61 DAY) AND DATE_ADD(DATE(cc.receive_date), INTERVAL 90 DAY)
       )",
-      'days_91_or_more' => "(SELECT SUM(rr5.amount)
-            FROM civicrm_contribution_recur rr5
-            WHERE rr5.id = rr1.id AND
+      'days_91_or_more' => "(SELECT SUM(rr5.total_amount)
+            FROM civicrm_contribution rr5
+            WHERE rr5.contribution_recur_id = rr1.id AND
             rr5.contribution_status_id IN ($pendingStatuses) AND
-            DATE(rr5.start_date) >= DATE_ADD(DATE(cc.receive_date), INTERVAL 91 DAY)
+            DATE(rr5.receive_date) >= DATE_ADD(DATE(cc.receive_date), INTERVAL 91 DAY)
       )",
       'num_records' => 'COUNT(li.id)',
       'days_overdue' => "DATEDIFF(
-        (SELECT MAX(DATE(start_date)) FROM civicrm_contribution_recur WHERE contribution_status_id IN ($pendingStatuses) AND id = rr1.id),
-        (SELECT MIN(DATE(start_date)) FROM civicrm_contribution_recur WHERE contribution_status_id IN ($pendingStatuses) AND id = rr1.id)
+        (SELECT MAX(DATE(receive_date)) FROM civicrm_contribution WHERE contribution_status_id IN ($pendingStatuses) AND contribution_recur_id = rr1.id),
+        (SELECT MIN(DATE(receive_date)) FROM civicrm_contribution WHERE contribution_status_id IN ($pendingStatuses) AND contribution_recur_id = rr1.id)
       )",
       'entity_type' => "'recurring payment'",
     ];
@@ -433,11 +434,11 @@ class CRM_Contact_Form_Search_Custom_FinancialAgingDup extends CRM_Contact_Form_
 
   public function recurringPaymentFromClause() {
     return "
-    FROM civicrm_line_item li
-      INNER JOIN civicrm_contribution cc ON cc.id = li.contribution_id
-      INNER JOIN civicrm_contribution_recur rr1 ON rr1.id = cc.contribution_recur_id
-      LEFT JOIN civicrm_financial_type ft ON ft.id = li.financial_type_id
-      LEFT JOIN civicrm_contact c ON c.id = cc.contact_id
+    FROM civicrm_contribution cc
+  INNER JOIN civicrm_contribution_recur rr1 ON rr1.id = cc.contribution_recur_id AND cc.contribution_recur_id IS NOT NULL AND cc.contribution_status_id = 1
+  LEFT JOIN civicrm_line_item li ON cc.id = li.contribution_id
+  LEFT JOIN civicrm_financial_type ft ON ft.id = li.financial_type_id
+  LEFT JOIN civicrm_contact c ON c.id = cc.contact_id
     ";
   }
 
