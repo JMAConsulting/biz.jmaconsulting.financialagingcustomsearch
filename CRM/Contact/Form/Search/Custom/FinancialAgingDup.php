@@ -121,7 +121,6 @@ class CRM_Contact_Form_Search_Custom_FinancialAgingDup extends CRM_Contact_Form_
     $whereClauses = ['(1)'];
     foreach ([
       'end_date' => 'DATE(cc.receive_date) < \'%s\'',
-      'financial_type_id' => 'ft.id IN (%s)',
       'preferred_communication_method' => 'c.preferred_communication_method IN (%s)',
     ] as $filter => $dbColumn) {
       $value = CRM_Utils_Array::value($filter, $this->_formValues);
@@ -130,12 +129,6 @@ class CRM_Contact_Form_Search_Custom_FinancialAgingDup extends CRM_Contact_Form_
           $whereClauses[] = sprintf($dbColumn, date('Y-m-d', strtotime($value)));
         }
         else {
-          if ($filter == 'financial_type_id') {
-            foreach ($value as $key => $id) {
-              $id = (int) $id;
-              $value[$key] = $id;
-            }
-          }
           $whereClauses[] = sprintf($dbColumn, implode(",", $value));
         }
       }
@@ -178,6 +171,16 @@ class CRM_Contact_Form_Search_Custom_FinancialAgingDup extends CRM_Contact_Form_
     $where = 'WHERE (1)';
     if (!empty($this->_formValues['num_days_overdue'])) {
       $where .= ' AND days_overdue >= ' . $this->_formValues['num_days_overdue'];
+    }
+
+    if (!empty($this->_formValues['financial_type_id'])) {
+       $value = $this->_formValues['financial_type_id'];
+       $v = CRM_Financial_BAO_FinancialType::getAvailableFinancialTypes();
+       foreach ($value as $key => $id) {
+         $id = (int) $id;
+         $value[$key] = $v[$id];
+       }
+       CRM_Core_DAO::executeQuery(sprintf("DELETE FROM temp_financialaging_customsearch WHERE ft_name NOT IN ('%s') ", implode("','", $value)));
     }
 
     if (!empty($this->_formValues['group_of_contact'])) {
