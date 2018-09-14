@@ -382,7 +382,7 @@ class CRM_Contact_Form_Search_Custom_FinancialAgingDup extends CRM_Contact_Form_
       'date_parm' => "'$end_date_parm'",
       'exp_date' => 'DATE(cc.receive_date)',
       'sort_name' => 'c.sort_name',
-      'paid' => 'SUM(li.line_total)',
+      'paid' => '(SELECT COALESCE(SUM(total_amount),0.00) FROM civicrm_contribution WHERE contribution_status_id  = 1 AND contribution_recur_id = cc.contribution_recur_id)',
       'total_amount' => 'cc.total_amount',
       'currency' => 'cc.currency',
       'line_id' => 'li.id',
@@ -434,8 +434,7 @@ class CRM_Contact_Form_Search_Custom_FinancialAgingDup extends CRM_Contact_Form_
   INNER JOIN civicrm_contribution_recur rr1 ON rr1.id = cc.contribution_recur_id AND cc.contribution_recur_id IS NOT NULL AND cc.contribution_status_id <> 1
   LEFT JOIN civicrm_line_item li ON cc.id = li.contribution_id
   LEFT JOIN civicrm_financial_type ft ON ft.id = li.financial_type_id
-  LEFT JOIN civicrm_contact c ON c.id = cc.contact_id AND c.is_deleted = 0
-    ";
+  LEFT JOIN civicrm_contact c ON c.id = cc.contact_id AND c.is_deleted = 0 ";
   }
 
   public function singleContributionFromClause() {
