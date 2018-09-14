@@ -121,6 +121,7 @@ class CRM_Contact_Form_Search_Custom_FinancialAgingDup extends CRM_Contact_Form_
     $whereClauses = ['(1)'];
     foreach ([
       'end_date' => 'DATE(cc.receive_date) < \'%s\'',
+      'financial_type_id' => 'ft.name IN (%s)',
       'preferred_communication_method' => 'c.preferred_communication_method IN (%s)',
     ] as $filter => $dbColumn) {
       $value = CRM_Utils_Array::value($filter, $this->_formValues);
@@ -129,6 +130,13 @@ class CRM_Contact_Form_Search_Custom_FinancialAgingDup extends CRM_Contact_Form_
           $whereClauses[] = sprintf($dbColumn, date('Y-m-d', strtotime($value)));
         }
         else {
+          if ($filter == 'financial_type_id') {
+            $ft = CRM_Financial_BAO_FinancialType::getAvailableFinancialTypes();
+            $value = [];
+            foreach ($value as $id) {
+              $value[$id] = $ft[$id];
+            }
+          }
           $whereClauses[] = sprintf($dbColumn, implode(',', $value));
         }
       }
@@ -174,10 +182,6 @@ class CRM_Contact_Form_Search_Custom_FinancialAgingDup extends CRM_Contact_Form_
     $where = 'WHERE (1)';
     if (!empty($this->_formValues['num_days_overdue'])) {
       $where .= ' AND days_overdue >= ' . $this->_formValues['num_days_overdue'];
-    }
-
-    if (!empty($this->_formValues['financial_type_id'])) {
-      $where .= ' AND ft_id IN (' . implode(',', $this->_formValues['financial_type_id']) . ')';
     }
 
     if (!empty($this->_formValues['group_of_contact'])) {
