@@ -117,11 +117,10 @@ class CRM_Contact_Form_Search_Custom_FinancialAgingDup extends CRM_Contact_Form_
     return " FROM temp_financialaging_customsearch temp ";
   }
 
-  function where($includeContactIDs = FALSE, $isrecurring = FALSE) {
+  function where($includeContactIDs = FALSE) {
     $whereClauses = ['(1)'];
     foreach ([
-      'end_date' => $isrecurring ? 'DATE(rr1.start_date) < \'%s\'' : 'DATE(cc.receive_date) < \'%s\'',
-      'financial_type_id' => 'ft.id IN (%s)',
+      'end_date' => 'DATE(cc.receive_date) < \'%s\'',
       'preferred_communication_method' => 'c.preferred_communication_method IN (%s)',
     ] as $filter => $dbColumn) {
       $value = CRM_Utils_Array::value($filter, $this->_formValues);
@@ -154,7 +153,7 @@ class CRM_Contact_Form_Search_Custom_FinancialAgingDup extends CRM_Contact_Form_
 
     $select = $this->select('Recurring payment', $onlyIDs);
     $from = $this->recurringPaymentFromClause();
-    $where = $this->where($includeContactIDs, TRUE);
+    $where = $this->where($includeContactIDs);
     $RRsql = $select . $from . $where . ' GROUP BY rr1.id ';
 
     CRM_Core_DAO::executeQuery("CREATE TEMPORARY TABLE temp_financialaging_customsearch DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci
@@ -176,6 +175,11 @@ class CRM_Contact_Form_Search_Custom_FinancialAgingDup extends CRM_Contact_Form_
     if (!empty($this->_formValues['num_days_overdue'])) {
       $where .= ' AND days_overdue >= ' . $this->_formValues['num_days_overdue'];
     }
+
+    if (!empty($this->_formValues['financial_type_id'])) {
+      $where .= ' AND ft_id IN (' . implode(',', $this->_formValues['financial_type_id']) . ')';
+    }
+
     if (!empty($this->_formValues['group_of_contact'])) {
       $values = implode(', ', (array) $this->_formValues['group_of_contact']);
       CRM_Core_DAO::executeQuery(sprintf("CREATE TEMPORARY TABLE temp_financialaging_groupcontacts DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci
@@ -335,6 +339,7 @@ class CRM_Contact_Form_Search_Custom_FinancialAgingDup extends CRM_Contact_Form_
       'currency' => 'cc.currency',
       'line_id' => 'li.id',
       'ft_name' => 'ft.name',
+      'ft_id' => 'ft.id',
       'ft_category' => "SUBSTRING(ft.name , 1, LOCATE( '---', ft.name) - 1)",
       'days_30' => "(SELECT SUM(pp2.scheduled_amount)
           FROM civicrm_pledge_payment pp2
@@ -387,6 +392,7 @@ class CRM_Contact_Form_Search_Custom_FinancialAgingDup extends CRM_Contact_Form_
       'currency' => 'cc.currency',
       'line_id' => 'li.id',
       'ft_name' => 'ft.name',
+      'ft_id' => 'ft.id',
       'ft_category' => "SUBSTRING(ft.name , 1, LOCATE( '---', ft.name) - 1)",
       'days_30' => "(SELECT SUM(rr2.total_amount)
           FROM civicrm_contribution rr2
