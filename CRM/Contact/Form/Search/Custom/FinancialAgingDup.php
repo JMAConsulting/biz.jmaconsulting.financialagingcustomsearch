@@ -117,10 +117,10 @@ class CRM_Contact_Form_Search_Custom_FinancialAgingDup extends CRM_Contact_Form_
     return " FROM temp_financialaging_customsearch temp ";
   }
 
-  function where($includeContactIDs = FALSE) {
+  function where($includeContactIDs = FALSE, $isrecurring = FALSE) {
     $whereClauses = ['(1)'];
     foreach ([
-      'end_date' => 'DATE(cc.receive_date) < \'%s\'',
+      'end_date' => $isrecurring ? 'DATE(rr1.start_date) < \'%s\'' : 'DATE(cc.receive_date) < \'%s\'',
       'financial_type_id' => 'ft.id IN (%s)',
       'preferred_communication_method' => 'c.preferred_communication_method IN (%s)',
     ] as $filter => $dbColumn) {
@@ -154,8 +154,8 @@ class CRM_Contact_Form_Search_Custom_FinancialAgingDup extends CRM_Contact_Form_
 
     $select = $this->select('Recurring payment', $onlyIDs);
     $from = $this->recurringPaymentFromClause();
-    $RRsql = $select . $from . $where . $groupBy;
-    $groupBy = 'GROUP BY rr1.id';
+    $where = $this->where($includeContactIDs, TRUE);
+    $RRsql = $select . $from . $where . ' GROUP BY rr1.id ';
 
     CRM_Core_DAO::executeQuery("CREATE TEMPORARY TABLE temp_financialaging_customsearch DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci
       ($PPsql)
@@ -410,8 +410,8 @@ class CRM_Contact_Form_Search_Custom_FinancialAgingDup extends CRM_Contact_Form_
       )",
       'num_records' => 'COUNT(li.id)',
       'days_overdue' => "DATEDIFF(
-        (SELECT MAX(DATE(receive_date)) FROM civicrm_contribution WHERE contribution_recur_id = rr1.id),
-        (SELECT MIN(DATE(receive_date)) FROM civicrm_contribution WHERE contribution_recur_id = rr1.id)
+        DATE('$end_date_parm'),
+        DATE(rr1.start_date)
       )",
       'entity_type' => "'recurring payment'",
     ];
