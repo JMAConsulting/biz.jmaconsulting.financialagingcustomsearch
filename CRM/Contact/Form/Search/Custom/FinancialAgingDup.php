@@ -428,17 +428,17 @@ class CRM_Contact_Form_Search_Custom_FinancialAgingDup extends CRM_Contact_Form_
       INNER JOIN civicrm_pledge_payment pp1 ON pp1.contribution_id = cc.id AND pp1.contribution_id = li.contribution_id AND pp1.contribution_id IS NOT NULL
       INNER JOIN civicrm_pledge p ON p.id = pp1.pledge_id
       LEFT JOIN civicrm_financial_type ft ON ft.id = li.financial_type_id
-      LEFT JOIN civicrm_contact c ON c.id = cc.contact_id
+      LEFT JOIN civicrm_contact c ON c.id = cc.contact_id AND c.is_deleted = 0
     ";
   }
 
   public function recurringPaymentFromClause() {
     return "
     FROM civicrm_contribution cc
-  INNER JOIN civicrm_contribution_recur rr1 ON rr1.id = cc.contribution_recur_id AND cc.contribution_recur_id IS NOT NULL AND cc.contribution_status_id = 1
+  INNER JOIN civicrm_contribution_recur rr1 ON rr1.id = cc.contribution_recur_id AND cc.contribution_recur_id IS NOT NULL AND cc.contribution_status_id <> 1
   LEFT JOIN civicrm_line_item li ON cc.id = li.contribution_id
   LEFT JOIN civicrm_financial_type ft ON ft.id = li.financial_type_id
-  LEFT JOIN civicrm_contact c ON c.id = cc.contact_id
+  LEFT JOIN civicrm_contact c ON c.id = cc.contact_id AND c.is_deleted = 0
     ";
   }
 
