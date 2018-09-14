@@ -121,7 +121,7 @@ class CRM_Contact_Form_Search_Custom_FinancialAgingDup extends CRM_Contact_Form_
     $whereClauses = ['(1)'];
     foreach ([
       'end_date' => 'DATE(cc.receive_date) < \'%s\'',
-      'financial_type_id' => 'ft.name IN (%s)',
+      'financial_type_id' => 'ft.name IN (\'%s\')',
       'preferred_communication_method' => 'c.preferred_communication_method IN (%s)',
     ] as $filter => $dbColumn) {
       $value = CRM_Utils_Array::value($filter, $this->_formValues);
@@ -129,19 +129,18 @@ class CRM_Contact_Form_Search_Custom_FinancialAgingDup extends CRM_Contact_Form_
         if ($filter == 'end_date') {
           $whereClauses[] = sprintf($dbColumn, date('Y-m-d', strtotime($value)));
         }
-        else {
-          if ($filter == 'financial_type_id') {
-            $ft = CRM_Financial_BAO_FinancialType::getAvailableFinancialTypes();
-            $value = [];
-            foreach ($value as $id) {
-              $value[$id] = $ft[$id];
-            }
+        elseif ($filter == 'financial_type_id') {
+          $ft = CRM_Financial_BAO_FinancialType::getAvailableFinancialTypes();
+          $value = [];
+          foreach ($value as $id) {
+            $id = (int) $id;
+            $value[$id] = $ft[$id];
           }
-          $whereClauses[] = sprintf($dbColumn, implode(',', $value));
+          $whereClauses[] = sprintf($dbColumn, implode("','", $value));
         }
-      }
-      elseif ($filter == 'end_date') {
-        $whereClauses[] = sprintf($dbColumn, date('Y-m-d'));
+        else {
+          $whereClauses[] = sprintf($dbColumn, implode(",", $value));
+        }
       }
     }
     return "WHERE " . implode(' AND ', $whereClauses);
