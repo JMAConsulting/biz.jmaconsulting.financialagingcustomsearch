@@ -332,38 +332,38 @@ class CRM_Contact_Form_Search_Custom_FinancialAgingDup extends CRM_Contact_Form_
     return [
       'contact_id' => 'c.id',
       'date_parm' => "'$end_date_parm'",
-      'exp_date' => 'DATE(cc.receive_date)',
+      'exp_date' => 'DATE(li.scheduled_date)',
       'sort_name' => 'c.sort_name',
-      'paid' => 'SUM(pp1.actual_amount)',
-      'total_amount' => 'p.amount',
-      'currency' => 'cc.currency',
+      'paid' => 'SUM(li.actual_amount)',
+      'total_amount' => 'li.scheduled_amount',
+      'currency' => 'p.currency',
       'line_id' => 'li.id',
       'ft_name' => 'ft.name',
       'ft_id' => 'ft.id',
       'ft_category' => "SUBSTRING(ft.name , 1, LOCATE( '---', ft.name) - 1)",
       'days_30' => "(SELECT SUM(pp2.scheduled_amount)
           FROM civicrm_pledge_payment pp2
-          WHERE pp2.pledge_id = pp1.pledge_id AND
+          WHERE pp2.pledge_id = p.id AND
            pp2.status_id <> $completeStatusID AND
-           DATE(pp2.scheduled_date) BETWEEN DATE(cc.receive_date) AND DATE_ADD(DATE(cc.receive_date), INTERVAL 30 DAY)
+           DATE(pp2.scheduled_date) BETWEEN DATE(li.scheduled_date) AND DATE_ADD(DATE(li.scheduled_date), INTERVAL 30 DAY)
       )",
       'days_60' => "(SELECT SUM(pp3.scheduled_amount)
             FROM civicrm_pledge_payment pp3
-            WHERE pp3.pledge_id = pp1.pledge_id AND
+            WHERE pp3.pledge_id = p.id AND
              pp3.status_id <> $completeStatusID AND
-              DATE(pp3.scheduled_date) BETWEEN DATE_ADD(DATE(cc.receive_date), INTERVAL 31 DAY) AND DATE_ADD(DATE(cc.receive_date), INTERVAL 60 DAY)
+              DATE(pp3.scheduled_date) BETWEEN DATE_ADD(DATE(li.scheduled_date), INTERVAL 31 DAY) AND DATE_ADD(DATE(li.scheduled_date), INTERVAL 60 DAY)
       )",
       'days_90' => "(SELECT SUM(pp4.scheduled_amount)
             FROM civicrm_pledge_payment pp4
-            WHERE pp4.pledge_id = pp1.pledge_id AND
+            WHERE pp4.pledge_id = p.id AND
              pp4.status_id <> $completeStatusID AND
-              DATE(pp4.scheduled_date) BETWEEN DATE_ADD(DATE(cc.receive_date), INTERVAL 61 DAY) AND DATE_ADD(DATE(cc.receive_date), INTERVAL 90 DAY)
+              DATE(pp4.scheduled_date) BETWEEN DATE_ADD(DATE(li.scheduled_date), INTERVAL 61 DAY) AND DATE_ADD(DATE(li.scheduled_date), INTERVAL 90 DAY)
       )",
       'days_91_or_more' => "(SELECT SUM(pp5.scheduled_amount)
             FROM civicrm_pledge_payment pp5
-            WHERE pp5.pledge_id = pp1.pledge_id AND
+            WHERE pp5.pledge_id = p.id AND
             pp5.status_id <> $completeStatusID AND
-            DATE(pp5.scheduled_date) >= DATE_ADD(DATE(cc.receive_date), INTERVAL 91 DAY)
+            DATE(pp5.scheduled_date) >= DATE_ADD(DATE(li.scheduled_date), INTERVAL 91 DAY)
       )",
       'num_records' => 'COUNT(li.id)',
       'days_overdue' => "DATEDIFF(
@@ -424,13 +424,21 @@ class CRM_Contact_Form_Search_Custom_FinancialAgingDup extends CRM_Contact_Form_
   }
 
   public function pledgePaymentFromClause() {
+    /**
     return "
     FROM civicrm_line_item li
       INNER JOIN civicrm_contribution cc ON cc.id = li.contribution_id
       INNER JOIN civicrm_pledge_payment pp1 ON pp1.contribution_id = cc.id AND pp1.contribution_id = li.contribution_id AND pp1.contribution_id IS NOT NULL
       INNER JOIN civicrm_pledge p ON p.id = pp1.pledge_id
       LEFT JOIN civicrm_financial_type ft ON ft.id = li.financial_type_id
-      LEFT JOIN civicrm_contact c ON c.id = cc.contact_id AND c.is_deleted = 0
+      LEFT JOIN civicrm_contact c ON c.id = p.contact_id AND c.is_deleted = 0
+    ";
+    */
+    return "
+    FROM civicrm_pledge_payment li
+    INNER JOIN civicrm_pledge p ON li.id = li.pledge_id
+    LEFT JOIN civicrm_financial_type ft ON ft.id = p.financial_type_id
+    LEFT JOIN civicrm_contact c ON c.id = p.contact_id AND c.is_deleted = 0
     ";
   }
 
