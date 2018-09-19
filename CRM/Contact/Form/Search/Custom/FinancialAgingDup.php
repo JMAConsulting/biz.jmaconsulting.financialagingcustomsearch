@@ -120,7 +120,6 @@ class CRM_Contact_Form_Search_Custom_FinancialAgingDup extends CRM_Contact_Form_
   function where($includeContactIDs = FALSE) {
     $whereClauses = ['(1)'];
     foreach ([
-      'end_date' => 'DATE(cc.receive_date) < \'%s\'',
       'preferred_communication_method' => 'c.preferred_communication_method IN (%s)',
     ] as $filter => $dbColumn) {
       $value = CRM_Utils_Array::value($filter, $this->_formValues);
@@ -142,15 +141,13 @@ class CRM_Contact_Form_Search_Custom_FinancialAgingDup extends CRM_Contact_Form_
     CRM_Core_DAO::executeQuery('DROP TEMPORARY TABLE IF EXISTS temp_financialaging_membershipcontacts');
 
     $where = $this->where($includeContactIDs);
-    $groupBy = ' GROUP BY li.id';
 
     $select = $this->select('Pledge payment', $onlyIDs);
     $from = $this->pledgePaymentFromClause();
-    $PPsql = $select . $from . $where . $groupBy;;
+    $PPsql = $select . $from . $where . " AND c.id IS NOT NULL GROUP BY li.id ";
 
     $select = $this->select('Recurring payment', $onlyIDs);
     $from = $this->recurringPaymentFromClause();
-    $where = $this->where($includeContactIDs);
     $RRsql = $select . $from . $where . ' GROUP BY rr1.id ';
 
     CRM_Core_DAO::executeQuery("CREATE TEMPORARY TABLE temp_financialaging_customsearch DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci
@@ -434,19 +431,27 @@ class CRM_Contact_Form_Search_Custom_FinancialAgingDup extends CRM_Contact_Form_
       LEFT JOIN civicrm_contact c ON c.id = p.contact_id AND c.is_deleted = 0
     ";
     */
+    $endDate = 'NOW()';
+    if (!empty($this->_formValues['end_date'])) {
+      $endDate = sprintf("'%s'", date('Y-m-d', strtotime($this->_formValues['end_date'])));
+    }
     return "
-    FROM civicrm_pledge_payment li
-    INNER JOIN civicrm_pledge p ON li.id = li.pledge_id
+    FROM civicrm_pledge p
+    INNER JOIN civicrm_pledge_payment li ON p.id = li.pledge_id  AND p.status_id NOT IN (1, 3) AND  p.is_test = 0 AND DATE(li.scheduled_date) <= $endDate AND p.id IS NOT NULL
     LEFT JOIN civicrm_financial_type ft ON ft.id = p.financial_type_id
     LEFT JOIN civicrm_contact c ON c.id = p.contact_id AND c.is_deleted = 0
     ";
   }
 
   public function recurringPaymentFromClause() {
+    $endDate = 'NOW()';
+    if (!empty($this->_formValues['end_date'])) {
+      $endDate = sprintf("'%s'", date('Y-m-d', strtotime($this->_formValues['end_date'])));
+    }
     return "
     FROM civicrm_contribution cc
   INNER JOIN civicrm_contribution_recur rr1 ON rr1.id = cc.contribution_recur_id AND cc.contribution_recur_id IS NOT NULL AND cc.contribution_status_id <> 1
-  LEFT JOIN civicrm_line_item li ON cc.id = li.contribution_id
+  LEFT JOIN civicrm_line_item li ON cc.id = li.contribution_id AND DATE(cc.receive_date) <= $endDate
   LEFT JOIN civicrm_financial_type ft ON ft.id = li.financial_type_id
   LEFT JOIN civicrm_contact c ON c.id = cc.contact_id AND c.is_deleted = 0 ";
   }
