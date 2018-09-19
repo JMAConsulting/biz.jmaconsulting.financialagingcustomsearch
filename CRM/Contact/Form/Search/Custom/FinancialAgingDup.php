@@ -327,10 +327,7 @@ class CRM_Contact_Form_Search_Custom_FinancialAgingDup extends CRM_Contact_Form_
 
   public function pledgePaymentSelectClause() {
     $end_date_parm = CRM_Utils_Date::processDate($this->_formValues['end_date'], NULL, FALSE, 'Y-m-d') ?: date('Y-m-d');
-    $pendingStatuses = implode(', ', [
-      CRM_Core_PseudoConstant::getKey('CRM_Pledge_BAO_PledgePayment', 'status_id', 'Overdue'),
-      CRM_Core_PseudoConstant::getKey('CRM_Pledge_BAO_PledgePayment', 'status_id', 'Pending'),
-    ]);
+    $completeStatusID = CRM_Core_PseudoConstant::getKey('CRM_Pledge_BAO_PledgePayment', 'status_id', 'Completed');
 
     return [
       'contact_id' => 'c.id',
@@ -347,31 +344,31 @@ class CRM_Contact_Form_Search_Custom_FinancialAgingDup extends CRM_Contact_Form_
       'days_30' => "(SELECT SUM(pp2.scheduled_amount)
           FROM civicrm_pledge_payment pp2
           WHERE pp2.pledge_id = pp1.pledge_id AND
-           pp2.status_id IN ($pendingStatuses) AND
+           pp2.status_id <> $completeStatusID AND
            DATE(pp2.scheduled_date) BETWEEN DATE(cc.receive_date) AND DATE_ADD(DATE(cc.receive_date), INTERVAL 30 DAY)
       )",
       'days_60' => "(SELECT SUM(pp3.scheduled_amount)
             FROM civicrm_pledge_payment pp3
             WHERE pp3.pledge_id = pp1.pledge_id AND
-             pp3.status_id IN ($pendingStatuses) AND
+             pp3.status_id <> $completeStatusID AND
               DATE(pp3.scheduled_date) BETWEEN DATE_ADD(DATE(cc.receive_date), INTERVAL 31 DAY) AND DATE_ADD(DATE(cc.receive_date), INTERVAL 60 DAY)
       )",
       'days_90' => "(SELECT SUM(pp4.scheduled_amount)
             FROM civicrm_pledge_payment pp4
             WHERE pp4.pledge_id = pp1.pledge_id AND
-             pp4.status_id IN ($pendingStatuses) AND
+             pp4.status_id <> $completeStatusID AND
               DATE(pp4.scheduled_date) BETWEEN DATE_ADD(DATE(cc.receive_date), INTERVAL 61 DAY) AND DATE_ADD(DATE(cc.receive_date), INTERVAL 90 DAY)
       )",
       'days_91_or_more' => "(SELECT SUM(pp5.scheduled_amount)
             FROM civicrm_pledge_payment pp5
             WHERE pp5.pledge_id = pp1.pledge_id AND
-            pp5.status_id IN ($pendingStatuses) AND
+            pp5.status_id <> $completeStatusID AND
             DATE(pp5.scheduled_date) >= DATE_ADD(DATE(cc.receive_date), INTERVAL 91 DAY)
       )",
       'num_records' => 'COUNT(li.id)',
       'days_overdue' => "DATEDIFF(
-        (SELECT MAX(DATE(scheduled_date)) FROM civicrm_pledge_payment WHERE status_id IN ($pendingStatuses) AND pledge_id = p.id),
-        (SELECT MIN(DATE(scheduled_date)) FROM civicrm_pledge_payment WHERE status_id IN ($pendingStatuses) AND pledge_id = p.id)
+        (SELECT MAX(DATE(scheduled_date)) FROM civicrm_pledge_payment WHERE status_id <> $completeStatusID AND pledge_id = p.id),
+        (SELECT MIN(DATE(scheduled_date)) FROM civicrm_pledge_payment WHERE status_id <> $completeStatusID AND pledge_id = p.id)
       )",
       'entity_type' => "'pledge payment'",
     ];
