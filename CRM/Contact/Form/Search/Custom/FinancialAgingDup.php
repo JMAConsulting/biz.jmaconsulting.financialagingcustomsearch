@@ -338,35 +338,12 @@ class CRM_Contact_Form_Search_Custom_FinancialAgingDup extends CRM_Contact_Form_
       'ft_name' => 'ft.name',
       'ft_id' => 'ft.id',
       'ft_category' => "SUBSTRING(ft.name , 1, LOCATE( '---', ft.name) - 1)",
-      'days_30' => "(SELECT SUM(pp2.scheduled_amount)
-          FROM civicrm_pledge_payment pp2
-          WHERE pp2.pledge_id = p.id AND
-           pp2.status_id <> $completeStatusID AND
-           DATE(pp2.scheduled_date) BETWEEN DATE(li.scheduled_date) AND DATE_ADD(DATE(li.scheduled_date), INTERVAL 30 DAY)
-      )",
-      'days_60' => "(SELECT SUM(pp3.scheduled_amount)
-            FROM civicrm_pledge_payment pp3
-            WHERE pp3.pledge_id = p.id AND
-             pp3.status_id <> $completeStatusID AND
-              DATE(pp3.scheduled_date) BETWEEN DATE_ADD(DATE(li.scheduled_date), INTERVAL 31 DAY) AND DATE_ADD(DATE(li.scheduled_date), INTERVAL 60 DAY)
-      )",
-      'days_90' => "(SELECT SUM(pp4.scheduled_amount)
-            FROM civicrm_pledge_payment pp4
-            WHERE pp4.pledge_id = p.id AND
-             pp4.status_id <> $completeStatusID AND
-              DATE(pp4.scheduled_date) BETWEEN DATE_ADD(DATE(li.scheduled_date), INTERVAL 61 DAY) AND DATE_ADD(DATE(li.scheduled_date), INTERVAL 90 DAY)
-      )",
-      'days_91_or_more' => "(SELECT SUM(pp5.scheduled_amount)
-            FROM civicrm_pledge_payment pp5
-            WHERE pp5.pledge_id = p.id AND
-            pp5.status_id <> $completeStatusID AND
-            DATE(pp5.scheduled_date) >= DATE_ADD(DATE(li.scheduled_date), INTERVAL 91 DAY)
-      )",
+      'days_30' => " if((datediff( date('$end_date_parm') ,date(li.scheduled_date)) >= 0  AND datediff(date('$end_date_parm') ,date(li.scheduled_date)) <= 30) , li.scheduled_amount,  NULL)",
+      'days_60' => " if((datediff( date('$end_date_parm') ,date(li.scheduled_date)) > 30  AND datediff(date('$end_date_parm') ,date(li.scheduled_date)) <= 60) , li.scheduled_amount,  NULL)",
+      'days_90' => " if((datediff( date('$end_date_parm') ,date(li.scheduled_date)) > 60  AND datediff(date('$end_date_parm') ,date(li.scheduled_date)) <= 90) , li.scheduled_amount,  NULL)",
+      'days_91_or_more' =>  = "if(   (datediff( date('$end_date_parm') ,date(li.scheduled_date)) > 90)  , li.scheduled_amount,  NULL)";
       'num_records' => 'COUNT(li.id)',
-      'days_overdue' => "DATEDIFF(
-        (SELECT MAX(DATE(scheduled_date)) FROM civicrm_pledge_payment WHERE status_id <> $completeStatusID AND pledge_id = p.id),
-        (SELECT MIN(DATE(scheduled_date)) FROM civicrm_pledge_payment WHERE status_id <> $completeStatusID AND pledge_id = p.id)
-      )",
+      'days_overdue' => "DATEDIFF(DATE('$end_date_parm'), exp_date)",
       'entity_type' => "'pledge payment'",
     ];
   }
