@@ -368,10 +368,10 @@ class CRM_Contact_Form_Search_Custom_FinancialAgingDup extends CRM_Contact_Form_
       'ft_name' => 'ft.name',
       'ft_id' => 'ft.id',
       'ft_category' => "SUBSTRING(ft.name , 1, LOCATE( '---', ft.name) - 1)",
-      'days_30' => " if((datediff( date('$end_date_parm') ,date(rr1.receive_date)) >= 0  AND datediff(date('$end_date_parm') ,date(rr1.receive_date)) <= 30) , rr1.total_amount,  NULL)",
-      'days_60' => " if((datediff( date('$end_date_parm') ,date(rr1.receive_date)) > 30  AND datediff(date('$end_date_parm') ,date(rr1.receive_date)) <= 60) , rr1.total_amount,  NULL)",
-      'days_90' => " if((datediff( date('$end_date_parm') ,date(rr1.receive_date)) > 60  AND datediff(date('$end_date_parm') ,date(rr1.receive_date)) <= 90) , rr1.total_amount,  NULL)",
-      'days_91_or_more' => "if(   (datediff( date('$end_date_parm') ,date(rr1.receive_date)) > 90)  , rr1.total_amount,  NULL)",
+      'days_30' => " if((datediff( date('$end_date_parm') ,date(cc.receive_date)) >= 0  AND datediff(date('$end_date_parm') ,date(cc.receive_date)) <= 30) , cc.total_amount,  NULL)",
+      'days_60' => " if((datediff( date('$end_date_parm') ,date(cc.receive_date)) > 30  AND datediff(date('$end_date_parm') ,date(cc.receive_date)) <= 60) , cc.total_amount,  NULL)",
+      'days_90' => " if((datediff( date('$end_date_parm') ,date(cc.receive_date)) > 60  AND datediff(date('$end_date_parm') ,date(cc.receive_date)) <= 90) , cc.total_amount,  NULL)",
+      'days_91_or_more' => "if(   (datediff( date('$end_date_parm') ,date(cc.receive_date)) > 90)  , cc.total_amount,  NULL)",
 /**
       'days_30' => "(SELECT SUM(rr2.total_amount)
           FROM civicrm_contribution rr2
