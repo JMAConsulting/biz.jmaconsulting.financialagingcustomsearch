@@ -341,9 +341,9 @@ class CRM_Contact_Form_Search_Custom_FinancialAgingDup extends CRM_Contact_Form_
       'days_30' => " if((datediff( date('$end_date_parm') ,date(li.scheduled_date)) >= 0  AND datediff(date('$end_date_parm') ,date(li.scheduled_date)) <= 30) , li.scheduled_amount,  NULL)",
       'days_60' => " if((datediff( date('$end_date_parm') ,date(li.scheduled_date)) > 30  AND datediff(date('$end_date_parm') ,date(li.scheduled_date)) <= 60) , li.scheduled_amount,  NULL)",
       'days_90' => " if((datediff( date('$end_date_parm') ,date(li.scheduled_date)) > 60  AND datediff(date('$end_date_parm') ,date(li.scheduled_date)) <= 90) , li.scheduled_amount,  NULL)",
-      'days_91_or_more' =>  = "if(   (datediff( date('$end_date_parm') ,date(li.scheduled_date)) > 90)  , li.scheduled_amount,  NULL)";
+      'days_91_or_more' => "if(   (datediff( date('$end_date_parm') ,date(li.scheduled_date)) > 90)  , li.scheduled_amount,  NULL)",
       'num_records' => 'COUNT(li.id)',
-      'days_overdue' => "DATEDIFF(DATE('$end_date_parm'), exp_date)",
+      'days_overdue' => "DATEDIFF(DATE('$end_date_parm'), li.scheduled_date)",
       'entity_type' => "'pledge payment'",
     ];
   }
@@ -371,22 +371,22 @@ class CRM_Contact_Form_Search_Custom_FinancialAgingDup extends CRM_Contact_Form_
       'days_30' => "(SELECT SUM(rr2.total_amount)
           FROM civicrm_contribution rr2
           WHERE rr2.contribution_recur_id = rr1.id AND
-           DATE(rr2.receive_date) BETWEEN DATE(cc.receive_date) AND DATE_ADD(DATE(cc.receive_date), INTERVAL 30 DAY)
+           DATE(rr2.receive_date) BETWEEN DATE('$end_date_parm') AND DATE_ADD(DATE('$end_date_parm'), INTERVAL 30 DAY)
       )",
       'days_60' => "(SELECT SUM(rr3.total_amount)
             FROM civicrm_contribution rr3
             WHERE rr3.contribution_recur_id = rr1.id AND
-              DATE(rr3.receive_date) BETWEEN DATE_ADD(DATE(cc.receive_date), INTERVAL 31 DAY) AND DATE_ADD(DATE(cc.receive_date), INTERVAL 60 DAY)
+              DATE(rr3.receive_date) BETWEEN DATE_ADD(DATE('$end_date_parm'), INTERVAL 31 DAY) AND DATE_ADD(DATE('$end_date_parm'), INTERVAL 60 DAY)
       )",
       'days_90' => "(SELECT SUM(rr4.total_amount)
             FROM civicrm_contribution rr4
             WHERE rr4.contribution_recur_id = rr1.id AND
-              DATE(rr4.receive_date) BETWEEN DATE_ADD(DATE(cc.receive_date), INTERVAL 61 DAY) AND DATE_ADD(DATE(cc.receive_date), INTERVAL 90 DAY)
+              DATE(rr4.receive_date) BETWEEN DATE_ADD(DATE('$end_date_parm'), INTERVAL 61 DAY) AND DATE_ADD(DATE('$end_date_parm'), INTERVAL 90 DAY)
       )",
       'days_91_or_more' => "(SELECT SUM(rr5.total_amount)
             FROM civicrm_contribution rr5
             WHERE rr5.contribution_recur_id = rr1.id AND
-            DATE(rr5.receive_date) >= DATE_ADD(DATE(cc.receive_date), INTERVAL 91 DAY)
+            DATE(rr5.receive_date) >= DATE_ADD(DATE('$end_date_parm'), INTERVAL 91 DAY)
       )",
       'num_records' => 'COUNT(li.id)',
       'days_overdue' => "DATEDIFF(
