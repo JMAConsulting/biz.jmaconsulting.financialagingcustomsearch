@@ -364,7 +364,7 @@ class CRM_Contact_Form_Search_Custom_FinancialAgingDup extends CRM_Contact_Form_
       'paid' => '(SELECT COALESCE(SUM(total_amount),0.00) FROM civicrm_contribution WHERE contribution_status_id  = 1 AND contribution_recur_id = cc.contribution_recur_id)',
       'total_amount' => 'cc.total_amount',
       'currency' => 'cc.currency',
-      'line_id' => 'li.id',
+      'line_id' => 'cc.id',
       'ft_name' => 'ft.name',
       'ft_id' => 'ft.id',
       'ft_category' => "SUBSTRING(ft.name , 1, LOCATE( '---', ft.name) - 1)",
@@ -372,55 +372,23 @@ class CRM_Contact_Form_Search_Custom_FinancialAgingDup extends CRM_Contact_Form_
       'days_60' => " if((datediff( date('$end_date_parm') ,date(cc.receive_date)) > 30  AND datediff(date('$end_date_parm') ,date(cc.receive_date)) <= 60) , cc.total_amount,  NULL)",
       'days_90' => " if((datediff( date('$end_date_parm') ,date(cc.receive_date)) > 60  AND datediff(date('$end_date_parm') ,date(cc.receive_date)) <= 90) , cc.total_amount,  NULL)",
       'days_91_or_more' => "if(   (datediff( date('$end_date_parm') ,date(cc.receive_date)) > 90)  , cc.total_amount,  NULL)",
-/**
-      'days_30' => "(SELECT SUM(rr2.total_amount)
-          FROM civicrm_contribution rr2
-          WHERE rr2.contribution_recur_id = rr1.id AND
-           DATE(rr2.receive_date) <= DATE_ADD(DATE('$end_date_parm'), INTERVAL 30 DAY)
-      )",
-      'days_60' => "(SELECT SUM(rr3.total_amount)
-            FROM civicrm_contribution rr3
-            WHERE rr3.contribution_recur_id = rr1.id AND
-              DATE(rr3.receive_date) BETWEEN DATE_ADD(DATE('$end_date_parm'), INTERVAL 31 DAY) AND DATE_ADD(DATE('$end_date_parm'), INTERVAL 60 DAY)
-      )",
-      'days_90' => "(SELECT SUM(rr4.total_amount)
-            FROM civicrm_contribution rr4
-            WHERE rr4.contribution_recur_id = rr1.id AND
-              DATE(rr4.receive_date) BETWEEN DATE_ADD(DATE('$end_date_parm'), INTERVAL 61 DAY) AND DATE_ADD(DATE('$end_date_parm'), INTERVAL 90 DAY)
-      )",
-      'days_91_or_more' => "(SELECT SUM(rr5.total_amount)
-            FROM civicrm_contribution rr5
-            WHERE rr5.contribution_recur_id = rr1.id AND
-            DATE(rr5.receive_date) >= DATE_ADD(DATE('$end_date_parm'), INTERVAL 91 DAY)
-      )",
-      */
       'num_records' => 'COUNT(li.id)',
       'days_overdue' => "DATEDIFF(
         DATE('$end_date_parm'),
-        DATE(rr1.start_date)
+        DATE(cc.receive_date)
       )",
       'entity_type' => "'recurring payment'",
     ];
   }
 
   public function pledgePaymentFromClause() {
-    /**
-    return "
-    FROM civicrm_line_item li
-      INNER JOIN civicrm_contribution cc ON cc.id = li.contribution_id
-      INNER JOIN civicrm_pledge_payment pp1 ON pp1.contribution_id = cc.id AND pp1.contribution_id = li.contribution_id AND pp1.contribution_id IS NOT NULL
-      INNER JOIN civicrm_pledge p ON p.id = pp1.pledge_id
-      LEFT JOIN civicrm_financial_type ft ON ft.id = li.financial_type_id
-      LEFT JOIN civicrm_contact c ON c.id = p.contact_id AND c.is_deleted = 0
-    ";
-    */
     $endDate = 'NOW()';
     if (!empty($this->_formValues['end_date'])) {
       $endDate = sprintf("'%s'", date('Y-m-d', strtotime($this->_formValues['end_date'])));
     }
     return "
     FROM civicrm_pledge p
-    INNER JOIN civicrm_pledge_payment li ON p.id = li.pledge_id  AND p.status_id NOT IN (1, 3) AND  p.is_test = 0 AND DATE(li.scheduled_date) <= $endDate AND p.id IS NOT NULL
+    INNER JOIN civicrm_pledge_payment li ON p.id = li.pledge_id  AND li.status_id NOT IN (1, 3) AND  p.is_test = 0 AND DATE(li.scheduled_date) <= $endDate AND p.id IS NOT NULL
     LEFT JOIN civicrm_financial_type ft ON ft.id = p.financial_type_id
     LEFT JOIN civicrm_contact c ON c.id = p.contact_id AND c.is_deleted = 0
     ";
