@@ -1,24 +1,23 @@
 <?xml version="1.0"?>
 <extension key="biz.jmaconsulting.financialagingcustomsearch" type="module">
   <file>financialagingcustomsearch</file>
-  <name>Financial Aging custom search</name>
-  <description>This extension implements 'Financial Aging with Pay Balances Details' custom search.</description>
+  <name>Financial Aging with Pay Balances Details custom search</name>
+  <description>This extension provides a search that shows financial aging of overdue contributions such as recurring contributions and pledge payments.</description>
   <license>AGPL-3.0</license>
   <maintainer>
     <author>Monish Deb</author>
     <email>everyone@jmaconsulting.biz</email>
   </maintainer>
   <urls>
-    <url desc="Main Extension Page">http://FIXME</url>
-    <url desc="Documentation">http://FIXME</url>
-    <url desc="Support">http://FIXME</url>
+    <url desc="Main Extension Page">https://github.com/JMAConsulting/biz.jmaconsulting.financialagingcustomsearch</url>
+    <url desc="Documentation">https://github.com/JMAConsulting/biz.jmaconsulting.financialagingcustomsearch/blob/master/README.md</url>
+    <url desc="Support">https://github.com/JMAConsulting/biz.jmaconsulting.financialagingcustomsearch/issues</url>
     <url desc="Licensing">http://www.gnu.org/licenses/agpl-3.0.html</url>
   </urls>
-  <releaseDate>2018-08-16</releaseDate>
+  <releaseDate>2018-10-15</releaseDate>
   <version>1.0</version>
-  <develStage>alpha</develStage>
   <compatibility>
-    <ver>5.4</ver>
+    <ver>5.7</ver>
   </compatibility>
   <comments>This extension implements 'Financial Aging with Pay Balances Details' custom search.</comments>
   <civix>
