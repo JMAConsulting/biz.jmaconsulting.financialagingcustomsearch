@@ -3,7 +3,8 @@
 /**
  * A custom contact search
  */
-class CRM_Financialagingcustomsearch_Form_Search_CRM_Contact_Form_Search_Custom_FinancialAgingWithPayBalances extends CRM_Contact_Form_Search_Custom_Base implements CRM_Contact_Form_Search_Interface {
+class CRM_FinancialAgingCustomSearch_Form_Search_FinancialAgingWithPayBalances extends CRM_Contact_Form_Search_Custom_Base implements CRM_Contact_Form_Search_Interface {
+
   protected $_formValues;
 
   protected $_groupByColumns = [];
@@ -387,7 +388,7 @@ class CRM_Financialagingcustomsearch_Form_Search_CRM_Contact_Form_Search_Custom_
     FROM civicrm_pledge p
     INNER JOIN civicrm_pledge_payment li ON p.id = li.pledge_id  AND li.status_id NOT IN (1, 3) AND  p.is_test = 0 AND DATE(li.scheduled_date) <= $endDate AND p.id IS NOT NULL
     LEFT JOIN civicrm_financial_type ft ON ft.id = p.financial_type_id
-    LEFT JOIN civicrm_contact c ON c.id = p.contact_id AND c.is_deleted = 0";
+    LEFT JOIN civicrm_contact c ON c.id = p.contact_id AND c.is_deleted = 0 ";
   }
 
   public function recurringPaymentFromClause() {

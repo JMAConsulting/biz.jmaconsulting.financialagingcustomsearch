@@ -16,11 +16,12 @@
   </urls>
   <releaseDate>2018-10-15</releaseDate>
   <version>1.0</version>
+  <develStage>stable</develStage>
   <compatibility>
     <ver>5.7</ver>
   </compatibility>
   <comments>This extension implements 'Financial Aging with Pay Balances Details' custom search.</comments>
   <civix>
-    <namespace>CRM/Financialagingcustomsearch</namespace>
+    <namespace>CRM/FinancialAgingCustomSearch</namespace>
   </civix>
 </extension>
