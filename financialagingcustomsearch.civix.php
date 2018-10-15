@@ -9,7 +9,7 @@
 class CRM_Financialagingcustomsearch_ExtensionUtil {
   const SHORT_NAME = "financialagingcustomsearch";
   const LONG_NAME = "biz.jmaconsulting.financialagingcustomsearch";
-  const CLASS_PREFIX = "CRM_Financialagingcustomsearch";
+  const CLASS_PREFIX = "CRM_FinancialAgingCustomSearch";
 
   /**
    * Translate a string using the extension's domain.

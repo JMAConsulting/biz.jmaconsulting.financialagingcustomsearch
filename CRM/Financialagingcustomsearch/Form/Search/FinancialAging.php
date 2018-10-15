@@ -3,7 +3,7 @@
 /**
  * A custom contact search
  */
-class CRM_FinancialAgingCustomSearch_Form_Search_FinancialAgingWithPayBalances extends CRM_Contact_Form_Search_Custom_Base implements CRM_Contact_Form_Search_Interface {
+class CRM_FinancialAgingCustomSearch_Form_Search_FinancialAging extends CRM_Contact_Form_Search_Custom_Base implements CRM_Contact_Form_Search_Interface {
 
   protected $_formValues;
 
