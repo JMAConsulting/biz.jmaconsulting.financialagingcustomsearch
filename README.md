@@ -14,7 +14,7 @@ install it with the command-line tool [cv](https://github.com/civicrm/cv).
 
 ```bash
 cd <extension-dir>
-cv dl biz.jmaconsulting.financialagingcustomsearch@https://github.com/FIXME/biz.jmaconsulting.financialagingcustomsearch/archive/jvillage-master.zip
+cv dl biz.jmaconsulting.financialagingcustomsearch@https://github.com/JMAConsulting/biz.jmaconsulting.financialagingcustomsearch/archive/jvillage-master.zip
 ```
 
 ## Installation (CLI, Git)
@@ -23,7 +23,7 @@ Sysadmins and developers may clone the [Git](https://en.wikipedia.org/wiki/Git) 
 install it with the command-line tool [cv](https://github.com/civicrm/cv).
 
 ```bash
-git clone https://github.com/JMAConsulting/biz.jmaconsulting.financialagingcustomsearch.git
+git clone -b jvillage-master https://github.com/JMAConsulting/biz.jmaconsulting.financialagingcustomsearch.git
 cv en financialagingcustomsearch
 ```
 
