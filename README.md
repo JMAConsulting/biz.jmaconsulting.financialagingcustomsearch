@@ -5,11 +5,7 @@
 * CiviCRM 5.7+
 
 ## Installation (Web UI)
-Once reviewed and approved for automated distribution, this extension will become available for installation via a browser inside CiviCRM:
-1. Navigate to Administer > System Settings > Extensions.
-2. Click on the Add New tab. 
-3. Beside this extension click the Download link.
-4. Click on Download and Install button.
+The jVillage version of this extension will not be available for web installation. Use one of the methods below.
 
 ## Installation (CLI, Zip)
 
