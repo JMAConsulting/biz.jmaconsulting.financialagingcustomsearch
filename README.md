@@ -1,13 +1,15 @@
-# Financial Aging with Pay Balances Details custom search
+# Financial Aging with Pay Balances Details Custom Search
 
 ## Requirements
-
 * PHP v5.4+
-* CiviCRM v5.7+
+* CiviCRM 5.7+
 
 ## Installation (Web UI)
-
-This extension has not yet been published for installation via the web UI.
+Once reviewed and approved for automated distribution, this extension will become available for installation via a browser inside CiviCRM:
+1. Navigate to Administer > System Settings > Extensions.
+2. Click on the Add New tab. 
+3. Beside this extension click the Download link.
+4. Click on Download and Install button.
 
 ## Installation (CLI, Zip)
 
