@@ -16,7 +16,7 @@ install it with the command-line tool [cv](https://github.com/civicrm/cv).
 
 ```bash
 cd <extension-dir>
-cv dl biz.jmaconsulting.showlatestpayments@https://github.com/FIXME/biz.jmaconsulting.financialagingcustomsearch/archive/master.zip
+cv dl biz.jmaconsulting.financialagingcustomsearch@https://github.com/FIXME/biz.jmaconsulting.financialagingcustomsearch/archive/jvillage-master.zip
 ```
 
 ## Installation (CLI, Git)
