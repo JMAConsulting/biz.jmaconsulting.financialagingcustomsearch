@@ -1,4 +1,7 @@
-# Financial Aging with Pay Balances Details custom search
+# Financial Aging Custom Search
+
+## Overview
+This extension provides a custom search that shows financial aging of overdue contributions such as recurring contributions and pledge payments. 
 
 ## Requirements
 
@@ -6,8 +9,11 @@
 * CiviCRM v5.7+
 
 ## Installation (Web UI)
-
-This extension has not yet been published for installation via the web UI.
+Once reviewed and approved for automated distribution, this extension will become available for installation via a browser inside CiviCRM:
+1. Navigate to Administer > System Settings > Extensions.
+2. Click on the Add New tab. 
+3. Beside this extension click the Download link.
+4. Click on Download and Install button.
 
 ## Installation (CLI, Zip)
 
@@ -31,7 +37,6 @@ cv en financialagingcustomsearch
 
 ## Usage
 
-This extension provides a search that shows financial aging of overdue contributions such as recurring contributions and pledge payments.
-After installation, you will find the new custom search under CiviCRM >> Search >> Custom Searches >> Financial Aging with Pay Balances
+Navigate to CiviCRM >> Search >> Custom Searches >> Financial Aging with Pay Balances
 Details.
 <img width="1399" alt="screen shot 2018-10-16 at 1 08 02 am" src="https://user-images.githubusercontent.com/3735621/46973850-092d1000-d0e0-11e8-92d2-e9d2d67491c1.png">
