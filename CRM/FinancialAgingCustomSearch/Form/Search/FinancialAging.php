@@ -143,7 +143,7 @@ class CRM_FinancialAgingCustomSearch_Form_Search_FinancialAging extends CRM_Cont
     CRM_Core_DAO::executeQuery(sprintf("CREATE TEMPORARY TABLE temp_recur_next_date DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci
       SELECT id, next_sched_contribution_date, modified_date, frequency_unit, frequency_interval
       FROM civicrm_contribution_recur
-      WHERE contribution_status_id IN ($pendingStatuses)
+      WHERE contribution_status_id IN ($pendingStatuses) AND installments IS NOT NULL
     "));
     $dao = CRM_Core_DAO::executeQuery("SELECT * FROM temp_recur_next_date");
     while($dao->fetch()) {
