@@ -133,10 +133,33 @@ class CRM_FinancialAgingCustomSearch_Form_Search_FinancialAging extends CRM_Cont
     return "WHERE " . implode(' AND ', $whereClauses);
   }
 
+  public static function populateNextScheduleDate () {
+    CRM_Core_DAO::executeQuery('DROP TEMPORARY TABLE IF EXISTS temp_recur_next_date');
+    $pendingStatuses = implode(', ', [
+      CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'contribution_status_id', 'Overdue'),
+      CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'contribution_status_id', 'Pending'),
+      CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'contribution_status_id', 'In Progress'),
+    ]);
+    CRM_Core_DAO::executeQuery(sprintf("CREATE TEMPORARY TABLE temp_recur_next_date DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci
+      SELECT id, next_sched_contribution_date, modified_date, frequency_unit, frequency_interval
+      FROM civicrm_contribution_recur
+      WHERE contribution_status_id IN ($pendingStatuses)
+    "));
+    $dao = CRM_Core_DAO::executeQuery("SELECT * FROM temp_recur_next_date");
+    while($dao->fetch()) {
+      if (empty($dao->next_sched_contribution_date)) {
+        $next_sched_contribution_date = date('Y-m-d', strtotime('+' . $dao->frequency_interval . ' ' .  $dao->frequency_unit, strtotime($dao->modified_date)));
+        CRM_Core_DAO::executeQuery(sprintf("UPDATE temp_recur_next_date SET next_sched_contribution_date = '%s' WHERE id = %d ", $next_sched_contribution_date, $dao->id));
+      }
+    }
+  }
+
   public function all($offset = 0, $rowcount = 0, $sort = NULL, $includeContactIDs = FALSE, $onlyIDs = FALSE) {
     CRM_Core_DAO::executeQuery('DROP TEMPORARY TABLE IF EXISTS temp_financialaging_customsearch');
     CRM_Core_DAO::executeQuery('DROP TEMPORARY TABLE IF EXISTS temp_financialaging_groupcontacts');
     CRM_Core_DAO::executeQuery('DROP TEMPORARY TABLE IF EXISTS temp_financialaging_membershipcontacts');
+
+    self::populateNextScheduleDate();
 
     $where = $this->where($includeContactIDs);
 
@@ -357,7 +380,7 @@ class CRM_FinancialAgingCustomSearch_Form_Search_FinancialAging extends CRM_Cont
     return [
       'contact_id' => 'c.id',
       'date_parm' => "'$end_date_parm'",
-      'exp_date' => 'DATE(rr.next_sched_contribution_date)',
+      'exp_date' => 'DATE(temp.next_sched_contribution_date)',
       'sort_name' => 'c.sort_name',
       'paid' => '(SELECT COALESCE(SUM(total_amount),0.00) FROM civicrm_contribution WHERE contribution_status_id  = 1 AND contribution_recur_id = rr.id)',
       'total_amount' => 'cc.total_amount',
@@ -366,14 +389,14 @@ class CRM_FinancialAgingCustomSearch_Form_Search_FinancialAging extends CRM_Cont
       'ft_name' => 'ft.name',
       'ft_id' => 'ft.id',
       'ft_category' => "SUBSTRING(ft.name , 1, LOCATE( '---', ft.name) - 1)",
-      'days_30' => " if((datediff( date('$end_date_parm') ,date(rr.next_sched_contribution_date)) >= 0  AND datediff(date('$end_date_parm') ,date(rr.next_sched_contribution_date)) <= 30) , cc.total_amount,  NULL)",
-      'days_60' => " if((datediff( date('$end_date_parm') ,date(rr.next_sched_contribution_date)) > 30  AND datediff(date('$end_date_parm') ,date(rr.next_sched_contribution_date)) <= 60) , cc.total_amount,  NULL)",
-      'days_90' => " if((datediff( date('$end_date_parm') ,date(rr.next_sched_contribution_date)) > 60  AND datediff(date('$end_date_parm') ,date(rr.next_sched_contribution_date)) <= 90) , cc.total_amount,  NULL)",
-      'days_91_or_more' => "if(   (datediff( date('$end_date_parm') ,date(rr.next_sched_contribution_date)) > 90)  , cc.total_amount,  NULL)",
+      'days_30' => " if((datediff( date('$end_date_parm') ,date(temp.next_sched_contribution_date)) >= 0  AND datediff(date('$end_date_parm') ,date(temp.next_sched_contribution_date)) <= 30) , cc.total_amount,  NULL)",
+      'days_60' => " if((datediff( date('$end_date_parm') ,date(temp.next_sched_contribution_date)) > 30  AND datediff(date('$end_date_parm') ,date(temp.next_sched_contribution_date)) <= 60) , cc.total_amount,  NULL)",
+      'days_90' => " if((datediff( date('$end_date_parm') ,date(temp.next_sched_contribution_date)) > 60  AND datediff(date('$end_date_parm') ,date(temp.next_sched_contribution_date)) <= 90) , cc.total_amount,  NULL)",
+      'days_91_or_more' => "if(   (datediff( date('$end_date_parm') ,date(temp.next_sched_contribution_date)) > 90)  , cc.total_amount,  NULL)",
       'num_records' => 'COUNT(li.id)',
       'days_overdue' => "DATEDIFF(
        DATE('$end_date_parm'),
-       DATE(rr.next_sched_contribution_date)
+       DATE(temp.next_sched_contribution_date)
       )",
       'entity_type' => "'recurring payment'",
     ];
@@ -404,7 +427,8 @@ class CRM_FinancialAgingCustomSearch_Form_Search_FinancialAging extends CRM_Cont
     ]);
     return "
     FROM civicrm_contribution_recur rr
-    INNER JOIN civicrm_contribution cc ON rr.id = cc.contribution_recur_id AND rr.contribution_status_id IN ($pendingStatuses)  AND DATE(rr.modified_date) = DATE(cc.receive_date) AND DATE(rr.next_sched_contribution_date) <= $endDate
+    INNER JOIN civicrm_contribution cc ON rr.id = cc.contribution_recur_id AND rr.contribution_status_id IN ($pendingStatuses)  AND DATE(rr.modified_date) = DATE(cc.receive_date)
+    INNER JOIN temp_recur_next_date temp ON temp.id = rr.id AND temp.next_sched_contribution_date <= $endDate
     LEFT JOIN civicrm_line_item li ON cc.id = li.contribution_id
     LEFT JOIN civicrm_financial_type ft ON ft.id = li.financial_type_id
     LEFT JOIN civicrm_contact c ON c.id = cc.contact_id AND c.is_deleted = 0 ";
