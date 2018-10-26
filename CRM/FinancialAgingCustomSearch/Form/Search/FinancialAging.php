@@ -146,7 +146,7 @@ class CRM_FinancialAgingCustomSearch_Form_Search_FinancialAging extends CRM_Cont
 
     $select = $this->select('Recurring payment', $onlyIDs);
     $from = $this->recurringPaymentFromClause();
-    $RRsql = $select . $from . $where . ' GROUP BY rr.id ';
+    $RRsql = $select . $from . $where . ' GROUP BY cc.id ';
 
     CRM_Core_DAO::executeQuery("CREATE TEMPORARY TABLE temp_financialaging_customsearch DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci
      ($PPsql)
