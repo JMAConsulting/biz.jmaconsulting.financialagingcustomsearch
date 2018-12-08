@@ -133,7 +133,7 @@ class CRM_FinancialAgingCustomSearch_Form_Search_FinancialAging extends CRM_Cont
     return "WHERE " . implode(' AND ', $whereClauses);
   }
 
-  public static function populateNextScheduleDate () {
+  public static function populateNextScheduleDate ($end_date_parm) {
     CRM_Core_DAO::executeQuery('DROP TEMPORARY TABLE IF EXISTS temp_recur_next_date');
     $pendingStatuses = implode(', ', [
       CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'contribution_status_id', 'Overdue'),
@@ -141,16 +141,27 @@ class CRM_FinancialAgingCustomSearch_Form_Search_FinancialAging extends CRM_Cont
       CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'contribution_status_id', 'In Progress'),
     ]);
     CRM_Core_DAO::executeQuery(sprintf("CREATE TEMPORARY TABLE temp_recur_next_date DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci
-      SELECT id, next_sched_contribution_date, modified_date, frequency_unit, frequency_interval
+      SELECT id, next_sched_contribution_date, modified_date, frequency_unit, frequency_interval, 0 as total_installment, 0 as interval1, 0 as interval2, 0 as interval3, 0 as interval4
       FROM civicrm_contribution_recur
       WHERE contribution_status_id IN ($pendingStatuses) AND installments IS NOT NULL
     "));
     $dao = CRM_Core_DAO::executeQuery("SELECT * FROM temp_recur_next_date");
     while($dao->fetch()) {
+      $next_sched_contribution_date = $dao->next_sched_contribution_date;
       if (empty($dao->next_sched_contribution_date)) {
         $next_sched_contribution_date = date('Y-m-d', strtotime('+' . $dao->frequency_interval . ' ' .  $dao->frequency_unit, strtotime($dao->modified_date)));
         CRM_Core_DAO::executeQuery(sprintf("UPDATE temp_recur_next_date SET next_sched_contribution_date = '%s' WHERE id = %d ", $next_sched_contribution_date, $dao->id));
       }
+      $unit = strtoupper($dao->frequency_unit);
+      CRM_Core_DAO::executeQuery("
+        UPDATE temp_recur_next_date SET
+          interval1 = IF(TIMESTAMPDIFF({$unit}, CURDATE(), DATE('{$next_sched_contribution_date}')) <= 0, IF(TIMESTAMPDIFF({$unit}, CURDATE(), DATE_ADD(CURDATE(), INTERVAL 30 DAY)) = 0, 1, TIMESTAMPDIFF({$unit}, CURDATE(), DATE_ADD(CURDATE(), INTERVAL 30 DAY))), 0),
+          interval2 = IF(TIMESTAMPDIFF({$unit}, DATE_ADD(CURDATE(), INTERVAL 31 DAY), DATE('{$next_sched_contribution_date}')) <= 0, IF(TIMESTAMPDIFF({$unit}, DATE_ADD(CURDATE(), INTERVAL 31 DAY), DATE_ADD(CURDATE(), INTERVAL 60 DAY)) = 0, 1, TIMESTAMPDIFF({$unit}, DATE_ADD(CURDATE(), INTERVAL 31 DAY), DATE_ADD(CURDATE(), INTERVAL 60 DAY))), 0),
+          interval3 = IF(TIMESTAMPDIFF({$unit}, DATE_ADD(CURDATE(), INTERVAL 61 DAY), DATE('{$next_sched_contribution_date}')) <= 0, IF(TIMESTAMPDIFF({$unit}, DATE_ADD(CURDATE(), INTERVAL 61 DAY), DATE_ADD(CURDATE(), INTERVAL 90 DAY)) = 0, 1, TIMESTAMPDIFF({$unit}, DATE_ADD(CURDATE(), INTERVAL 61 DAY), DATE_ADD(CURDATE(), INTERVAL 90 DAY))), 0),
+          interval4 = IF(TIMESTAMPDIFF({$unit}, DATE_ADD(CURDATE(), INTERVAL 91 DAY), DATE('{$next_sched_contribution_date}')) <= 0, IF(TIMESTAMPDIFF({$unit}, DATE_ADD(CURDATE(), INTERVAL 91 DAY), DATE('$end_date_parm')) = 0, 1, TIMESTAMPDIFF({$unit}, DATE_ADD(CURDATE(), INTERVAL 91 DAY), DATE('$end_date_parm'))), 0),
+          total_installment = ROUND(IF(DATE('{$next_sched_contribution_date}') < CURDATE(), TIMESTAMPDIFF({$unit}, CURDATE(), '{$end_date_parm}'), TIMESTAMPDIFF({$unit}, '{$next_sched_contribution_date}', '{$end_date_parm}')))
+          WHERE id = $dao->id
+      ");
     }
   }
 
@@ -159,7 +170,8 @@ class CRM_FinancialAgingCustomSearch_Form_Search_FinancialAging extends CRM_Cont
     CRM_Core_DAO::executeQuery('DROP TEMPORARY TABLE IF EXISTS temp_financialaging_groupcontacts');
     CRM_Core_DAO::executeQuery('DROP TEMPORARY TABLE IF EXISTS temp_financialaging_membershipcontacts');
 
-    self::populateNextScheduleDate();
+    $end_date_parm = CRM_Utils_Date::processDate($this->_formValues['end_date'], NULL, FALSE, 'Y-m-d') ?: date('Y-m-d');
+    self::populateNextScheduleDate($end_date_parm);
 
     $where = $this->where($includeContactIDs);
 
@@ -383,17 +395,17 @@ class CRM_FinancialAgingCustomSearch_Form_Search_FinancialAging extends CRM_Cont
       'exp_date' => 'DATE(temp.next_sched_contribution_date)',
       'sort_name' => 'c.sort_name',
       'paid' => '(SELECT COALESCE(SUM(total_amount),0.00) FROM civicrm_contribution WHERE contribution_status_id  = 1 AND contribution_recur_id = rr.id)',
-      'total_amount' => 'cc.total_amount',
+      'total_amount' => 'ROUND(temp.total_installment * rr.amount)',
       'currency' => 'cc.currency',
       'line_id' => 'cc.id',
       'ft_name' => 'ft.name',
       'ft_id' => 'ft.id',
       'ft_category' => "SUBSTRING(ft.name , 1, LOCATE( '---', ft.name) - 1)",
-      'days_30' => " if((datediff( date('$end_date_parm') ,date(temp.next_sched_contribution_date)) >= 0  AND datediff(date('$end_date_parm') ,date(temp.next_sched_contribution_date)) <= 30) , cc.total_amount,  NULL)",
-      'days_60' => " if((datediff( date('$end_date_parm') ,date(temp.next_sched_contribution_date)) > 30  AND datediff(date('$end_date_parm') ,date(temp.next_sched_contribution_date)) <= 60) , cc.total_amount,  NULL)",
-      'days_90' => " if((datediff( date('$end_date_parm') ,date(temp.next_sched_contribution_date)) > 60  AND datediff(date('$end_date_parm') ,date(temp.next_sched_contribution_date)) <= 90) , cc.total_amount,  NULL)",
-      'days_91_or_more' => "if(   (datediff( date('$end_date_parm') ,date(temp.next_sched_contribution_date)) > 90)  , cc.total_amount,  NULL)",
-      'num_records' => 'COUNT(li.id)',
+      'days_30' => "IF(temp.interval1 = 0, '',  ROUND((temp.interval1 * rr.amount)/rr.frequency_interval))",
+      'days_60' => "IF(temp.interval2 = 0, '',  ROUND((temp.interval2 * rr.amount)/rr.frequency_interval))",
+      'days_90' => "IF(temp.interval3 = 0, '',  ROUND((temp.interval3 * rr.amount)/rr.frequency_interval))",
+      'days_91_or_more' => "IF(temp.interval4 = 0, '',  ROUND((temp.interval4 * rr.amount)/rr.frequency_interval))",
+      'num_records' => 'temp.total_installment',
       'days_overdue' => "DATEDIFF(
        DATE('$end_date_parm'),
        DATE(temp.next_sched_contribution_date)
