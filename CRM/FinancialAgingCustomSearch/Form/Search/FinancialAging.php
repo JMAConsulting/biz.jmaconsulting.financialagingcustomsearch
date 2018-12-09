@@ -159,11 +159,6 @@ class CRM_FinancialAgingCustomSearch_Form_Search_FinancialAging extends CRM_Cont
       }
       $unit = strtoupper($dao->frequency_unit);
 
-      $endDate = date('Y-m-d', strtotime('+' . ($dao->frequency_interval *  $dao->installments) . ' ' .  $dao->frequency_unit, strtotime($dao->start_date)));
-      if (strtotime($endDate) < strtotime($end_date_parm)) {
-        //$end_date_parm = $endDate;
-      }
-
       if ($unit == 'MONTH') {
         $parts = explode('-', $next_sched_contribution_date);
         $parts[2] = '01';
@@ -182,7 +177,7 @@ class CRM_FinancialAgingCustomSearch_Form_Search_FinancialAging extends CRM_Cont
           interval4 = IF(
             TIMESTAMPDIFF({$unit}, DATE_ADD(CURDATE(), INTERVAL 91 DAY), DATE('{$next_sched_contribution_date}')) <= 0,
              IF(TIMESTAMPDIFF({$unit}, DATE_ADD(CURDATE(), INTERVAL 91 DAY), DATE('$end_date_parm')) = 0,
-              IF(frequency_unit = 'month', 1, 0), TIMESTAMPDIFF({$unit}, DATE_ADD(CURDATE(), INTERVAL 91 DAY), DATE('$end_date_parm'))
+              IF(frequency_unit = 'month', 1, 0), TIMESTAMPDIFF({$unit}, '{$next_sched_contribution_date}', DATE('$end_date_parm'))
              ),
             0),
           total_installment = ROUND(IF(DATE('{$next_sched_contribution_date}') < CURDATE(), TIMESTAMPDIFF({$unit}, CURDATE(), '{$end_date_parm}'), TIMESTAMPDIFF({$unit}, '{$next_sched_contribution_date}', '{$end_date_parm}')))
