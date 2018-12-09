@@ -160,8 +160,10 @@ class CRM_FinancialAgingCustomSearch_Form_Search_FinancialAging extends CRM_Cont
       $unit = strtoupper($dao->frequency_unit);
 
       $endDate = date('Y-m-d', strtotime('+' . ($dao->frequency_interval *  $dao->installments) . ' ' .  $dao->frequency_unit, strtotime($dao->start_date)));
+      $endDateExceeds = TRUE;
       if (strtotime($endDate) > strtotime($end_date_parm)) {
         $endDate = $end_date_parm;
+        $endDateExceeds = FALSE;
       }
 
       /*
@@ -199,7 +201,9 @@ class CRM_FinancialAgingCustomSearch_Form_Search_FinancialAging extends CRM_Cont
             TIMESTAMPDIFF({$unit}, '{$next_sched_contribution_date}', DATE('$endDate')))
           WHERE id = $dao->id
       ");
-      CRM_Core_DAO::executeQuery(" UPDATE temp_recur_next_date SET interval4 = IF(interval4 > 0, interval4 + 1, interval4) WHERE id = $dao->id ");
+      if (!$endDateExceeds) {
+        CRM_Core_DAO::executeQuery(" UPDATE temp_recur_next_date SET interval4 = IF(interval4 > 0, interval4 + 1, interval4) WHERE id = $dao->id ");
+      }
       CRM_Core_DAO::executeQuery(" UPDATE temp_recur_next_date SET total_installment = (interval1 + interval2 + interval3 + interval4) WHERE id = $dao->id ");
     }
   }
