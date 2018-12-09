@@ -159,6 +159,12 @@ class CRM_FinancialAgingCustomSearch_Form_Search_FinancialAging extends CRM_Cont
       }
       $unit = strtoupper($dao->frequency_unit);
 
+      $endDate = date('Y-m-d', strtotime('+' . ($dao->frequency_interval *  $dao->installments) . ' ' .  $dao->frequency_unit, strtotime($dao->start_date)));
+      if (strtotime($endDate) > strtotime($end_date_parm)) {
+        $endDate = $end_date_parm;
+      }
+
+      /*
       $interval = 1;
       if ($unit == 'MONTH') {
         $interval = 30.42;
@@ -169,17 +175,17 @@ class CRM_FinancialAgingCustomSearch_Form_Search_FinancialAging extends CRM_Cont
       elseif ($unit == 'WEEK') {
         $interval = 7;
       }
-
       CRM_Core_DAO::executeQuery("
         UPDATE temp_recur_next_date SET
           interval1 = IF(DATEDIFF(DATE('{$next_sched_contribution_date}'), CURDATE()) <= 0, ROUND(DATEDIFF(DATE_ADD(CURDATE(), INTERVAL 30 DAY), CURDATE())/{$interval}), 0),
           interval2 = IF(DATEDIFF(DATE('{$next_sched_contribution_date}'), DATE_ADD(CURDATE(), INTERVAL 31 DAY)) <= 0, ROUND(DATEDIFF(DATE_ADD(CURDATE(), INTERVAL 60 DAY), DATE_ADD(CURDATE(), INTERVAL 31 DAY))/{$interval}), 0),
           interval3 = IF(DATEDIFF(DATE('{$next_sched_contribution_date}'), DATE_ADD(CURDATE(), INTERVAL 61 DAY)) <= 0, ROUND(DATEDIFF(DATE_ADD(CURDATE(), INTERVAL 90 DAY), DATE_ADD(CURDATE(), INTERVAL 61 DAY))/{$interval}), 0),
           interval4 = IF(DATEDIFF('$end_date_parm', DATE_ADD(CURDATE(), INTERVAL 91 DAY)) <= 0, ROUND(DATEDIFF('$end_date_parm', DATE_ADD(CURDATE(), INTERVAL 91 DAY))/{$interval}), 0),
-          total_installment = ROUND(IF(DATE('{$next_sched_contribution_date}') < CURDATE(), TIMESTAMPDIFF({$unit}, CURDATE(), '{$end_date_parm}'), TIMESTAMPDIFF({$unit}, '{$next_sched_contribution_date}', '{$end_date_parm}')))
+          total_installment = TRUNCATE(IF(DATE('{$next_sched_contribution_date}') < CURDATE(), TIMESTAMPDIFF({$unit}, CURDATE(), '{$end_date_parm}'), TIMESTAMPDIFF({$unit}, '{$next_sched_contribution_date}', '{$end_date_parm}')))
           WHERE id = $dao->id
       ");
-/*
+      */
+
       CRM_Core_DAO::executeQuery("
         UPDATE temp_recur_next_date SET
           interval1 = IF(TIMESTAMPDIFF({$unit}, CURDATE(), DATE('{$next_sched_contribution_date}')) <= 0, IF(TIMESTAMPDIFF({$unit}, CURDATE(), DATE_ADD(CURDATE(), INTERVAL 30 DAY)) = 0, IF(frequency_unit = 'month', 1, 0), TIMESTAMPDIFF({$unit}, CURDATE(), DATE_ADD(CURDATE(), INTERVAL 30 DAY))), 0),
@@ -187,14 +193,13 @@ class CRM_FinancialAgingCustomSearch_Form_Search_FinancialAging extends CRM_Cont
           interval3 = IF(TIMESTAMPDIFF({$unit}, DATE_ADD(CURDATE(), INTERVAL 61 DAY), DATE('{$next_sched_contribution_date}')) <= 0, IF(TIMESTAMPDIFF({$unit}, DATE_ADD(CURDATE(), INTERVAL 61 DAY), DATE_ADD(CURDATE(), INTERVAL 90 DAY)) = 0, IF(frequency_unit = 'month', 1, 0), TIMESTAMPDIFF({$unit}, DATE_ADD(CURDATE(), INTERVAL 61 DAY), DATE_ADD(CURDATE(), INTERVAL 90 DAY))), 0),
           interval4 = IF(
             TIMESTAMPDIFF({$unit}, DATE_ADD(CURDATE(), INTERVAL 91 DAY), DATE('{$next_sched_contribution_date}')) <= 0,
-             IF(TIMESTAMPDIFF({$unit}, DATE_ADD(CURDATE(), INTERVAL 91 DAY), DATE('$end_date_parm')) = 0,
-              IF(frequency_unit = 'month', 1, 0), TIMESTAMPDIFF({$unit}, '{$next_sched_contribution_date}', DATE('$end_date_parm'))
+             IF(TIMESTAMPDIFF({$unit}, DATE_ADD(CURDATE(), INTERVAL 91 DAY), DATE('$endDate')) = 0,
+              IF(frequency_unit = 'month', 1, 0), TIMESTAMPDIFF({$unit}, DATE_ADD(CURDATE(), INTERVAL 91 DAY), DATE('$endDate'))
              ),
-            TIMESTAMPDIFF({$unit}, '{$next_sched_contribution_date}', DATE('$end_date_parm'))),
-          total_installment = ROUND(IF(DATE('{$next_sched_contribution_date}') < CURDATE(), TIMESTAMPDIFF({$unit}, CURDATE(), '{$end_date_parm}'), TIMESTAMPDIFF({$unit}, '{$next_sched_contribution_date}', '{$end_date_parm}')))
+            TIMESTAMPDIFF({$unit}, '{$next_sched_contribution_date}', DATE('$endDate'))),
+          total_installment = ROUND(IF(DATE('{$next_sched_contribution_date}') < CURDATE(), TIMESTAMPDIFF({$unit}, CURDATE(), '{$endDate}'), TIMESTAMPDIFF({$unit}, '{$next_sched_contribution_date}', '{$endDate}')))
           WHERE id = $dao->id
       ");
-      */
     }
   }
 
