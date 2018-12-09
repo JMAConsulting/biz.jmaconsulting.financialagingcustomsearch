@@ -179,7 +179,7 @@ class CRM_FinancialAgingCustomSearch_Form_Search_FinancialAging extends CRM_Cont
              IF(TIMESTAMPDIFF({$unit}, DATE_ADD(CURDATE(), INTERVAL 91 DAY), DATE('$end_date_parm')) = 0,
               IF(frequency_unit = 'month', 1, 0), TIMESTAMPDIFF({$unit}, '{$next_sched_contribution_date}', DATE('$end_date_parm'))
              ),
-            TIMESTAMPDIFF({$unit}, '{$next_sched_contribution_date}', DATE('$end_date_parm')),
+            TIMESTAMPDIFF({$unit}, '{$next_sched_contribution_date}', DATE('$end_date_parm'))),
           total_installment = ROUND(IF(DATE('{$next_sched_contribution_date}') < CURDATE(), TIMESTAMPDIFF({$unit}, CURDATE(), '{$end_date_parm}'), TIMESTAMPDIFF({$unit}, '{$next_sched_contribution_date}', '{$end_date_parm}')))
           WHERE id = $dao->id
       ");
