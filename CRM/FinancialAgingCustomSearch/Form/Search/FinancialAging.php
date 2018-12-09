@@ -196,10 +196,11 @@ class CRM_FinancialAgingCustomSearch_Form_Search_FinancialAging extends CRM_Cont
              IF(TIMESTAMPDIFF({$unit}, DATE_ADD(CURDATE(), INTERVAL 91 DAY), DATE('$endDate')) = 0,
               IF(frequency_unit = 'month', 1, 0), TIMESTAMPDIFF({$unit}, DATE_ADD(CURDATE(), INTERVAL 91 DAY), DATE('$endDate'))
              ),
-            TIMESTAMPDIFF({$unit}, '{$next_sched_contribution_date}', DATE('$endDate'))),
-          total_installment = ROUND(IF(DATE('{$next_sched_contribution_date}') < CURDATE(), TIMESTAMPDIFF({$unit}, CURDATE(), '{$endDate}'), TIMESTAMPDIFF({$unit}, '{$next_sched_contribution_date}', '{$endDate}')))
+            TIMESTAMPDIFF({$unit}, '{$next_sched_contribution_date}', DATE('$endDate')))
           WHERE id = $dao->id
       ");
+      CRM_Core_DAO::executeQuery(" UPDATE temp_recur_next_date SET interval4 = IF(interval4 > 0, interval4 + 1, interval4) WHERE id = $dao->id ");
+      CRM_Core_DAO::executeQuery(" UPDATE temp_recur_next_date SET total_installment = (interval1 + interval2 + interval3 + interval4) WHERE id = $dao->id ");
     }
   }
 
