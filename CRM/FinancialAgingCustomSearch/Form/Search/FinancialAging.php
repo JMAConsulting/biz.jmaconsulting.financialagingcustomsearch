@@ -161,7 +161,17 @@ class CRM_FinancialAgingCustomSearch_Form_Search_FinancialAging extends CRM_Cont
 
       $endDate = date('Y-m-d', strtotime('+' . ($dao->frequency_interval *  $dao->installments) . ' ' .  $dao->frequency_unit, strtotime($dao->start_date)));
       if (strtotime($endDate) < strtotime($end_date_parm)) {
-        $end_date_parm = $endDate;
+        //$end_date_parm = $endDate;
+      }
+
+      if ($unit == 'MONTH') {
+        $parts = explode('-', $next_sched_contribution_date);
+        $parts[2] = '01';
+        $next_sched_contribution_date = implode('-', $parts);
+      }
+      elseif ($unit == 'YEAR') {
+        $parts = explode('-', $next_sched_contribution_date);
+        $next_sched_contribution_date = $parts[0] . '01-01';
       }
 
       CRM_Core_DAO::executeQuery("
