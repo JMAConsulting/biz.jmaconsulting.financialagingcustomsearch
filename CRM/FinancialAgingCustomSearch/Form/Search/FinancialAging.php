@@ -164,16 +164,6 @@ class CRM_FinancialAgingCustomSearch_Form_Search_FinancialAging extends CRM_Cont
         $end_date_parm = $endDate;
       }
 
-      if ($unit == 'MONTH') {
-        $parts = explode('-', $next_sched_contribution_date);
-        $parts[2] = '01';
-        $next_sched_contribution_date = implode('-', $parts);
-      }
-      elseif ($unit == 'YEAR') {
-        $parts = explode('-', $next_sched_contribution_date);
-        $next_sched_contribution_date = $parts[0] . '01-01';
-      }
-
       CRM_Core_DAO::executeQuery("
         UPDATE temp_recur_next_date SET
           interval1 = IF(TIMESTAMPDIFF({$unit}, CURDATE(), DATE('{$next_sched_contribution_date}')) <= 0, IF(TIMESTAMPDIFF({$unit}, CURDATE(), DATE_ADD(CURDATE(), INTERVAL 30 DAY)) = 0, IF(frequency_unit = 'month', 1, 0), TIMESTAMPDIFF({$unit}, CURDATE(), DATE_ADD(CURDATE(), INTERVAL 30 DAY))), 0),
