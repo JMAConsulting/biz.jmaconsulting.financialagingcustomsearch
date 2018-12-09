@@ -141,7 +141,12 @@ class CRM_FinancialAgingCustomSearch_Form_Search_FinancialAging extends CRM_Cont
       CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'contribution_status_id', 'In Progress'),
     ]);
     CRM_Core_DAO::executeQuery(sprintf("CREATE TEMPORARY TABLE temp_recur_next_date DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci
-      SELECT id, next_sched_contribution_date, modified_date, frequency_unit, frequency_interval, 0 as total_installment, 0 as interval1, 0 as interval2, 0 as interval3, 0 as interval4
+      SELECT id, start_date,
+       next_sched_contribution_date,
+      modified_date, frequency_unit,
+      installments,
+      frequency_interval,
+      0 as total_installment, 0 as interval1, 0 as interval2, 0 as interval3, 0 as interval4
       FROM civicrm_contribution_recur
       WHERE contribution_status_id IN ($pendingStatuses) AND installments IS NOT NULL
     "));
@@ -153,12 +158,33 @@ class CRM_FinancialAgingCustomSearch_Form_Search_FinancialAging extends CRM_Cont
         CRM_Core_DAO::executeQuery(sprintf("UPDATE temp_recur_next_date SET next_sched_contribution_date = '%s' WHERE id = %d ", $next_sched_contribution_date, $dao->id));
       }
       $unit = strtoupper($dao->frequency_unit);
+
+      $endDate = date('Y-m-d', strtotime('+' . ($dao->frequency_interval *  $dao->installments) . ' ' .  $dao->frequency_unit, strtotime($dao->start_date)));
+      if (strtotime($endDate) < strtotime($end_date_parm)) {
+        $end_date_parm = $endDate;
+      }
+
+      if ($unit == 'MONTH') {
+        $parts = explode('-', $next_sched_contribution_date);
+        $parts[2] = '01';
+        $next_sched_contribution_date = implode('-', $parts);
+      }
+      elseif ($unit == 'YEAR') {
+        $parts = explode('-', $next_sched_contribution_date);
+        $next_sched_contribution_date = $parts[0] . '01-01';
+      }
+
       CRM_Core_DAO::executeQuery("
         UPDATE temp_recur_next_date SET
           interval1 = IF(TIMESTAMPDIFF({$unit}, CURDATE(), DATE('{$next_sched_contribution_date}')) <= 0, IF(TIMESTAMPDIFF({$unit}, CURDATE(), DATE_ADD(CURDATE(), INTERVAL 30 DAY)) = 0, IF(frequency_unit = 'month', 1, 0), TIMESTAMPDIFF({$unit}, CURDATE(), DATE_ADD(CURDATE(), INTERVAL 30 DAY))), 0),
           interval2 = IF(TIMESTAMPDIFF({$unit}, DATE_ADD(CURDATE(), INTERVAL 31 DAY), DATE('{$next_sched_contribution_date}')) <= 0, IF(TIMESTAMPDIFF({$unit}, DATE_ADD(CURDATE(), INTERVAL 31 DAY), DATE_ADD(CURDATE(), INTERVAL 60 DAY)) = 0, IF(frequency_unit = 'month', 1, 0), TIMESTAMPDIFF({$unit}, DATE_ADD(CURDATE(), INTERVAL 31 DAY), DATE_ADD(CURDATE(), INTERVAL 60 DAY))), 0),
           interval3 = IF(TIMESTAMPDIFF({$unit}, DATE_ADD(CURDATE(), INTERVAL 61 DAY), DATE('{$next_sched_contribution_date}')) <= 0, IF(TIMESTAMPDIFF({$unit}, DATE_ADD(CURDATE(), INTERVAL 61 DAY), DATE_ADD(CURDATE(), INTERVAL 90 DAY)) = 0, IF(frequency_unit = 'month', 1, 0), TIMESTAMPDIFF({$unit}, DATE_ADD(CURDATE(), INTERVAL 61 DAY), DATE_ADD(CURDATE(), INTERVAL 90 DAY))), 0),
-          interval4 = IF(TIMESTAMPDIFF({$unit}, DATE_ADD(CURDATE(), INTERVAL 91 DAY), DATE('{$next_sched_contribution_date}')) <= 0, IF(TIMESTAMPDIFF({$unit}, DATE_ADD(CURDATE(), INTERVAL 91 DAY), DATE('$end_date_parm')) = 0, IF(frequency_unit = 'month', 1, 0), TIMESTAMPDIFF({$unit}, DATE_ADD(CURDATE(), INTERVAL 91 DAY), DATE('$end_date_parm'))), 0),
+          interval4 = IF(
+            TIMESTAMPDIFF({$unit}, DATE_ADD(CURDATE(), INTERVAL 91 DAY), DATE('{$next_sched_contribution_date}')) <= 0,
+             IF(TIMESTAMPDIFF({$unit}, DATE_ADD(CURDATE(), INTERVAL 91 DAY), DATE('$end_date_parm')) = 0,
+              IF(frequency_unit = 'month', 1, 0), TIMESTAMPDIFF({$unit}, DATE_ADD(CURDATE(), INTERVAL 91 DAY), DATE('$end_date_parm'))
+             ),
+            0),
           total_installment = ROUND(IF(DATE('{$next_sched_contribution_date}') < CURDATE(), TIMESTAMPDIFF({$unit}, CURDATE(), '{$end_date_parm}'), TIMESTAMPDIFF({$unit}, '{$next_sched_contribution_date}', '{$end_date_parm}')))
           WHERE id = $dao->id
       ");
@@ -401,10 +427,10 @@ class CRM_FinancialAgingCustomSearch_Form_Search_FinancialAging extends CRM_Cont
       'ft_name' => 'ft.name',
       'ft_id' => 'ft.id',
       'ft_category' => "SUBSTRING(ft.name , 1, LOCATE( '---', ft.name) - 1)",
-      'days_30' => "IF(temp.interval1 = 0, '',  ROUND((temp.interval1 * rr.amount)/rr.frequency_interval))",
-      'days_60' => "IF(temp.interval2 = 0, '',  ROUND((temp.interval2 * rr.amount)/rr.frequency_interval))",
-      'days_90' => "IF(temp.interval3 = 0, '',  ROUND((temp.interval3 * rr.amount)/rr.frequency_interval))",
-      'days_91_or_more' => "IF(temp.interval4 = 0, '',  ROUND((temp.interval4 * rr.amount)/rr.frequency_interval))",
+      'days_30' => "IF(temp.interval1 = 0, NULL,  ROUND((temp.interval1 * rr.amount)/rr.frequency_interval))",
+      'days_60' => "IF(temp.interval2 = 0, NULL,  ROUND((temp.interval2 * rr.amount)/rr.frequency_interval))",
+      'days_90' => "IF(temp.interval3 = 0, NULL,  ROUND((temp.interval3 * rr.amount)/rr.frequency_interval))",
+      'days_91_or_more' => "IF(temp.interval4 = 0, NULL,  ROUND((temp.interval4 * rr.amount)/rr.frequency_interval))",
       'num_records' => 'temp.total_installment',
       'days_overdue' => "DATEDIFF(
        DATE('$end_date_parm'),
