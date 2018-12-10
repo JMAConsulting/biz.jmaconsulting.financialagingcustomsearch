@@ -191,14 +191,22 @@ class CRM_FinancialAgingCustomSearch_Form_Search_FinancialAging extends CRM_Cont
       CRM_Core_DAO::executeQuery("
         UPDATE temp_recur_next_date SET
           interval1 = IF(TIMESTAMPDIFF({$unit}, CURDATE(), DATE('{$next_sched_contribution_date}')) <= 0, IF(TIMESTAMPDIFF({$unit}, CURDATE(), DATE_ADD(CURDATE(), INTERVAL 30 DAY)) = 0, IF(frequency_unit = 'month', 1, 0), TIMESTAMPDIFF({$unit}, CURDATE(), DATE_ADD(CURDATE(), INTERVAL 30 DAY))), 0),
-          interval2 = IF(TIMESTAMPDIFF({$unit}, DATE_ADD(CURDATE(), INTERVAL 31 DAY), DATE('{$next_sched_contribution_date}')) <= 0, IF(TIMESTAMPDIFF({$unit}, DATE_ADD(CURDATE(), INTERVAL 31 DAY), DATE_ADD(CURDATE(), INTERVAL 60 DAY)) = 0, IF(frequency_unit = 'month', 1, 0), TIMESTAMPDIFF({$unit}, DATE_ADD(CURDATE(), INTERVAL 31 DAY), DATE_ADD(CURDATE(), INTERVAL 60 DAY))), 0),
-          interval3 = IF(TIMESTAMPDIFF({$unit}, DATE_ADD(CURDATE(), INTERVAL 61 DAY), DATE('{$next_sched_contribution_date}')) <= 0, IF(TIMESTAMPDIFF({$unit}, DATE_ADD(CURDATE(), INTERVAL 61 DAY), DATE_ADD(CURDATE(), INTERVAL 90 DAY)) = 0, IF(frequency_unit = 'month', 1, 0), TIMESTAMPDIFF({$unit}, DATE_ADD(CURDATE(), INTERVAL 61 DAY), DATE_ADD(CURDATE(), INTERVAL 90 DAY))), 0),
-          interval4 = IF(
-            TIMESTAMPDIFF({$unit}, DATE_ADD(CURDATE(), INTERVAL 91 DAY), DATE('{$next_sched_contribution_date}')) <= 0,
+          interval2 =
+           IF (DATE_ADD(CURDATE(), INTERVAL 31 DAY) < DATE('$endDate'),
+             IF(TIMESTAMPDIFF({$unit}, DATE_ADD(CURDATE(), INTERVAL 31 DAY), DATE('{$next_sched_contribution_date}')) <= 0, IF(TIMESTAMPDIFF({$unit}, DATE_ADD(CURDATE(), INTERVAL 31 DAY), DATE_ADD(CURDATE(), INTERVAL 60 DAY)) = 0, IF(frequency_unit = 'month', 1, 0), TIMESTAMPDIFF({$unit}, DATE_ADD(CURDATE(), INTERVAL 31 DAY), DATE_ADD(CURDATE(), INTERVAL 60 DAY))), 0),
+           0),
+          interval3 =
+           IF (DATE_ADD(CURDATE(), INTERVAL 61 DAY) < DATE('$endDate'),
+             IF(TIMESTAMPDIFF({$unit}, DATE_ADD(CURDATE(), INTERVAL 61 DAY), DATE('{$next_sched_contribution_date}')) <= 0, IF(TIMESTAMPDIFF({$unit}, DATE_ADD(CURDATE(), INTERVAL 61 DAY), DATE_ADD(CURDATE(), INTERVAL 90 DAY)) = 0, IF(frequency_unit = 'month', 1, 0), TIMESTAMPDIFF({$unit}, DATE_ADD(CURDATE(), INTERVAL 61 DAY), DATE_ADD(CURDATE(), INTERVAL 90 DAY))), 0),
+           0),
+          interval4 =
+          IF (DATE_ADD(CURDATE(), INTERVAL 91 DAY) < DATE('$endDate'),
+           IF(TIMESTAMPDIFF({$unit}, DATE_ADD(CURDATE(), INTERVAL 91 DAY), DATE('{$next_sched_contribution_date}')) <= 0,
              IF(TIMESTAMPDIFF({$unit}, DATE_ADD(CURDATE(), INTERVAL 91 DAY), DATE('$endDate')) = 0,
               IF(frequency_unit = 'month', 1, 0), TIMESTAMPDIFF({$unit}, DATE_ADD(CURDATE(), INTERVAL 91 DAY), DATE('$endDate'))
              ),
-            TIMESTAMPDIFF({$unit}, '{$next_sched_contribution_date}', DATE('$endDate')))
+            TIMESTAMPDIFF({$unit}, '{$next_sched_contribution_date}', DATE('$endDate'))),
+           0)
           WHERE id = $dao->id
       ");
       if (!$endDateExceeds) {
