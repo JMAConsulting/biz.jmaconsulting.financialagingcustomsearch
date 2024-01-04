@@ -18,10 +18,20 @@
   <version>1.0</version>
   <develStage>stable</develStage>
   <compatibility>
-    <ver>5.7</ver>
+    <ver>5.38</ver>
   </compatibility>
   <comments>This extension implements 'Financial Aging with Pay Balances Details' custom search.</comments>
   <civix>
     <namespace>CRM/FinancialAgingCustomSearch</namespace>
+    <format>23.02.1</format>
   </civix>
+  <mixins>
+    <mixin>mgd-php@1.0.0</mixin>
+    <mixin>smarty-v2@1.0.1</mixin>
+  </mixins>
+  <classloader>
+    <psr0 prefix="CRM_" path="."/>
+    <psr4 prefix="Civi\" path="Civi"/>
+  </classloader>
+  <upgrader>CRM_FinancialAgingCustomSearch_Upgrader</upgrader>
 </extension>
